@@ -117,4 +117,4 @@ export function formatDateStrFromDate(d) {
 
 export const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
 export const MONTH_NAMES = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
-export const ACTIVITIES = ['', 'Dépôt', 'Contenaire', 'Déplacement', 'Déménagement']
+export const ACTIVITIES = ['', 'Dépôt', 'Foire', 'Contenaire', 'Déplacement', 'Déménagement']

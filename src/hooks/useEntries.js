@@ -93,21 +93,35 @@ export function useEntries(userId) {
   }, [userId])
 
   const upsertEntry = useCallback(async (date, entry) => {
+    const rawSlots = Array.isArray(entry.slots) ? entry.slots : []
+    const slots = rawSlots.map((s) => ({
+      start: typeof s?.start === 'string' ? s.start : '08:00',
+      end: typeof s?.end === 'string' ? s.end : '17:00',
+    }))
+    const total_minutes = Math.round(Number(entry.total_minutes)) || 0
+    const day_type = ['normal', 'ferie', 'cp', 'recup'].includes(entry.day_type) ? entry.day_type : 'normal'
+    const dateStr = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : date
     const row = {
-      date,
-      day_type: entry.day_type || 'normal',
-      slots: entry.slots || [],
-      activity: entry.activity || null,
-      note: entry.note || null,
-      total_minutes: entry.total_minutes ?? 0,
+      date: dateStr,
+      day_type,
+      slots,
+      activity: entry.activity != null && entry.activity !== '' ? String(entry.activity) : null,
+      note: entry.note != null && entry.note !== '' ? String(entry.note) : null,
+      total_minutes,
       updated_at: new Date().toISOString(),
     }
-    persist((prev) => ({ ...prev, [date]: { ...row, user_id: userId } }))
+    persist((prev) => ({ ...prev, [dateStr]: { ...row, user_id: userId } }))
     if (hasSupabase() && userId) {
-      await supabase.from('entries').upsert(
-        { user_id: userId, ...row },
-        { onConflict: 'user_id,date' }
-      )
+      const payload = { user_id: userId, ...row }
+      const opts = { onConflict: 'user_id,date' }
+      let lastErr = null
+      for (let attempt = 0; attempt <= 2; attempt++) {
+        const { error } = await supabase.from('entries').upsert(payload, opts)
+        if (!error) break
+        lastErr = error
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 800))
+      }
+      if (lastErr) throw lastErr
     }
   }, [userId, persist])
 

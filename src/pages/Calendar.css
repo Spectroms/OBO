@@ -154,6 +154,7 @@
   border-radius: 2px;
 }
 .calendar-grid td.activity-depot .cell-activity-bar { background: #223E7E; }
+.calendar-grid td.activity-foire .cell-activity-bar { background: #c1121f; }
 .calendar-grid td.activity-contenaire .cell-activity-bar { background: #2d6a4f; }
 .calendar-grid td.activity-deplacement .cell-activity-bar { background: #7b2cbf; }
 .calendar-grid td.activity-demenagement .cell-activity-bar { background: #e85d04; }

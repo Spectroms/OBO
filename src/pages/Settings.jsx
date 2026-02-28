@@ -327,20 +327,22 @@ export default function Settings() {
                 const list = Array.isArray(data) ? data : []
                 let ok = 0
                 let err = 0
+                const dateOk = (d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)
                 for (const entry of list) {
-                  if (!entry?.date) continue
+                  if (!entry?.date || !dateOk(entry.date)) continue
                   try {
                     await upsertEntry(entry.date, {
                       day_type: entry.day_type || 'normal',
-                      slots: entry.slots || [],
-                      activity: entry.activity || null,
-                      note: entry.note || null,
-                      total_minutes: entry.total_minutes ?? 0,
+                      slots: Array.isArray(entry.slots) ? entry.slots : [],
+                      activity: entry.activity ?? null,
+                      note: entry.note ?? null,
+                      total_minutes: Math.round(Number(entry.total_minutes)) || 0,
                     })
                     ok++
                   } catch (_) {
                     err++
                   }
+                  if (list.length > 50) await new Promise((r) => setTimeout(r, 30))
                 }
                 setImportResult(`Import terminé : ${ok} entrée(s) importée(s)${err ? `, ${err} erreur(s)` : ''}.`)
               } catch (err) {
