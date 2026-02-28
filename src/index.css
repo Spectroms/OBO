@@ -1,0 +1,42 @@
+:root {
+  --obo-primary: #223E7E;
+  --obo-bg: #EAECEF;
+  --obo-text: #1a1a1a;
+  --obo-text-muted: #555;
+  --obo-border: #ccc;
+  --obo-card-bg: #fff;
+}
+
+[data-theme="dark"] {
+  --obo-primary: #5a7bc4;
+  --obo-bg: #1a1a1a;
+  --obo-text: #eaeaea;
+  --obo-text-muted: #aaa;
+  --obo-border: #444;
+  --obo-card-bg: #2a2a2a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--obo-bg);
+  color: var(--obo-text);
+  min-height: 100vh;
+}
+
+a {
+  color: var(--obo-primary);
+}
+
+button {
+  cursor: pointer;
+  font: inherit;
+}
+
+input, select, textarea {
+  font: inherit;
+}

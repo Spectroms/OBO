@@ -1,0 +1,313 @@
+.settings-page h1 {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+}
+
+.settings-section {
+  background: var(--obo-card-bg);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--obo-border);
+}
+
+.settings-section h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--obo-text-muted);
+}
+
+.settings-email {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--obo-text-muted);
+}
+
+.settings-email strong {
+  color: var(--obo-text);
+}
+
+.settings-name-display {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.settings-name-value {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--obo-text);
+}
+
+.settings-name-value strong {
+  color: var(--obo-text-muted);
+  font-weight: 500;
+}
+
+.btn-edit-name {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--obo-border);
+  background: var(--obo-bg);
+  color: var(--obo-text);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-edit-name:hover {
+  border-color: var(--obo-primary);
+  color: var(--obo-primary);
+}
+
+.settings-form-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.settings-section .btn-secondary {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--obo-border);
+  background: transparent;
+  color: var(--obo-text);
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.settings-section .btn-secondary:hover {
+  border-color: var(--obo-primary);
+  color: var(--obo-primary);
+}
+
+.settings-require-name {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--obo-bg-soft);
+  color: var(--obo-text);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.settings-error {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: #fee;
+  color: #c00;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .settings-error {
+  background: #4a2020;
+  color: #ff8080;
+}
+
+.settings-section .required {
+  color: #c00;
+}
+
+.settings-section label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.settings-section input {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--obo-border);
+  border-radius: 6px;
+  background: var(--obo-bg);
+  color: var(--obo-text);
+}
+
+.settings-section .btn-primary {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--obo-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* Toggle thème sombre */
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.settings-toggle-label {
+  font-size: 0.95rem;
+  color: var(--obo-text);
+}
+
+.settings-toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.settings-toggle-slider {
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  background: var(--obo-border);
+  border-radius: 12px;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.settings-toggle-slider::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s;
+}
+
+.settings-toggle-input:checked + .settings-toggle-slider {
+  background: var(--obo-primary);
+}
+
+.settings-toggle-input:checked + .settings-toggle-slider::after {
+  transform: translateX(20px);
+}
+
+.settings-toggle-input:focus-visible + .settings-toggle-slider {
+  outline: 2px solid var(--obo-primary);
+  outline-offset: 2px;
+}
+
+.settings-hint {
+  font-size: 0.9rem;
+  color: var(--obo-text-muted);
+  margin: 0 0 0.75rem;
+}
+
+.settings-section .btn-logout {
+  margin-top: 0.25rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--obo-border);
+  background: transparent;
+  color: var(--obo-text);
+  border-radius: 6px;
+}
+
+.settings-section .btn-logout:hover {
+  border-color: var(--obo-primary);
+  color: var(--obo-primary);
+}
+
+.btn-delete-account {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #c00;
+  background: transparent;
+  color: #c00;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn-delete-account:hover {
+  background: #fee;
+  border-color: #a00;
+}
+
+[data-theme="dark"] .btn-delete-account:hover {
+  background: #4a2020;
+}
+
+.settings-delete-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.settings-delete-modal {
+  background: var(--obo-card-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-width: 400px;
+  width: 100%;
+  border: 1px solid var(--obo-border);
+}
+
+.settings-delete-modal h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  color: var(--obo-text);
+}
+
+.settings-delete-modal p {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--obo-text-muted);
+}
+
+.settings-delete-warning {
+  margin-top: 0.75rem !important;
+}
+
+.settings-delete-input {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--obo-border);
+  border-radius: 6px;
+  background: var(--obo-bg);
+  color: var(--obo-text);
+  font-size: 1rem;
+}
+
+.settings-delete-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  justify-content: flex-end;
+}
+
+.btn-delete-confirm {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: #c00;
+  color: #fff;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-delete-confirm:hover:not(:disabled) {
+  background: #a00;
+}
+
+.btn-delete-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

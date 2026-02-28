@@ -1,0 +1,51 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!
+const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+
+Deno.serve(async (req) => {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  }
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  const authHeader = req.headers.get("Authorization")
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: "Non authentifié" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  }
+
+  const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+  })
+
+  const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
+
+  if (userError || !user) {
+    return new Response(
+      JSON.stringify({ error: "Utilisateur introuvable" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  }
+
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
+  const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id)
+
+  if (deleteError) {
+    return new Response(
+      JSON.stringify({ error: deleteError.message }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    )
+  }
+
+  return new Response(
+    JSON.stringify({ success: true }),
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+  )
+})

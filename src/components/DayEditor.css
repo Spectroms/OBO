@@ -1,0 +1,119 @@
+.day-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.day-editor {
+  background: var(--obo-card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 420px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.day-editor h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  color: var(--obo-text);
+}
+
+.day-editor label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--obo-text-muted);
+}
+
+.day-editor label.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.day-editor input[type="text"],
+.day-editor input[type="time"],
+.day-editor select {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--obo-border);
+  border-radius: 6px;
+  background: var(--obo-bg);
+  color: var(--obo-text);
+}
+
+.slots-block {
+  margin-bottom: 1rem;
+}
+
+.slots-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.slots-header button {
+  background: none;
+  border: none;
+  color: var(--obo-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.slot-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.slot-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.slot-row button {
+  background: none;
+  border: none;
+  color: var(--obo-text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.day-total {
+  margin: 0.5rem 0 0;
+  font-weight: 600;
+  color: var(--obo-primary);
+}
+
+.day-editor-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.day-editor-actions button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--obo-border);
+  background: var(--obo-bg);
+  color: var(--obo-text);
+}
+
+.day-editor-actions .btn-primary {
+  background: var(--obo-primary);
+  color: #fff;
+  border-color: var(--obo-primary);
+}

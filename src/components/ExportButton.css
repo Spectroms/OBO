@@ -1,0 +1,46 @@
+.export-block {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.export-block label {
+  font-size: 0.9rem;
+  color: var(--obo-text-muted);
+}
+
+.export-block select {
+  display: block;
+  margin-top: 0.25rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--obo-border);
+  border-radius: 6px;
+  background: var(--obo-bg);
+  color: var(--obo-text);
+}
+
+.export-block .btn-primary {
+  padding: 0.5rem 1rem;
+  background: var(--obo-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.export-block .btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.export-block label.export-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.export-block label.export-checkbox input {
+  margin: 0;
+}

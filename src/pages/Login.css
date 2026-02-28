@@ -1,0 +1,141 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--obo-bg);
+}
+
+.login-theme {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.login-theme button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.login-card {
+  background: var(--obo-card-bg);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.login-logo {
+  height: 56px;
+  width: auto;
+  margin-bottom: 0.5rem;
+}
+
+.login-brand h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--obo-primary);
+}
+
+.login-brand h1 em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--obo-text);
+}
+
+.login-form label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--obo-text-muted);
+}
+
+.login-form input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--obo-border);
+  border-radius: 6px;
+  background: var(--obo-bg);
+  color: var(--obo-text);
+}
+
+.login-form .btn-primary {
+  width: 100%;
+  padding: 0.6rem;
+  margin-top: 0.5rem;
+  background: var(--obo-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.login-form .btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.login-form .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-form .btn-link {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+  background: none;
+  border: none;
+  color: var(--obo-primary);
+  font-size: 0.9rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.login-success {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+[data-theme="dark"] .login-success {
+  background: #1b3d1f;
+  color: #81c784;
+}
+
+.login-success-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.login-error {
+  background: #fee;
+  color: #c00;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.login-form .required {
+  color: #c00;
+}
+
+[data-theme="dark"] .login-error {
+  background: #4a2020;
+  color: #ff8080;
+}

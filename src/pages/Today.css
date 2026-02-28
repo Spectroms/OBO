@@ -1,0 +1,133 @@
+.today-page {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.today-loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--obo-text-muted);
+}
+
+.today-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.35rem;
+  color: var(--obo-text);
+}
+
+.today-date {
+  margin: 0 0 1.25rem;
+  font-size: 1rem;
+  color: var(--obo-primary);
+  font-weight: 600;
+}
+
+.today-form {
+  background: var(--obo-card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid var(--obo-border);
+}
+
+.today-form label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--obo-text-muted);
+}
+
+.today-form label.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.today-form input[type="text"],
+.today-form input[type="time"],
+.today-form select {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--obo-border);
+  border-radius: 6px;
+  background: var(--obo-bg);
+  color: var(--obo-text);
+}
+
+.today-form .slots-block {
+  margin-bottom: 1rem;
+}
+
+.today-form .slots-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.today-form .slots-header button {
+  background: none;
+  border: none;
+  color: var(--obo-primary);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.today-form .slot-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.today-form .slot-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.today-form .slot-row button {
+  background: none;
+  border: none;
+  color: var(--obo-text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.today-form .day-total {
+  margin: 0.5rem 0 0;
+  font-weight: 600;
+  color: var(--obo-primary);
+}
+
+.today-form .btn-save {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.65rem;
+  background: var(--obo-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.today-form .btn-save:hover {
+  opacity: 0.95;
+}
+
+.today-link {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.today-link a {
+  color: var(--obo-primary);
+  text-decoration: none;
+}
+
+.today-link a:hover {
+  text-decoration: underline;
+}

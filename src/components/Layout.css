@@ -1,0 +1,108 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-header {
+  background: var(--obo-card-bg);
+  border-bottom: 1px solid var(--obo-border);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.layout-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.layout-logo {
+  height: 36px;
+  width: auto;
+}
+
+.layout-title {
+  color: var(--obo-primary);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.layout-title em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--obo-text);
+}
+
+.layout-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.layout-nav a {
+  text-decoration: none;
+  color: var(--obo-text);
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+}
+
+.layout-nav a:hover {
+  background: var(--obo-bg);
+  color: var(--obo-primary);
+}
+
+.layout-nav a.active {
+  color: var(--obo-primary);
+  font-weight: 600;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  cursor: pointer;
+}
+
+.layout-user {
+  font-size: 0.9rem;
+  color: var(--obo-text-muted);
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid var(--obo-border);
+  color: var(--obo-text);
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.btn-logout:hover {
+  background: var(--obo-bg);
+  border-color: var(--obo-primary);
+  color: var(--obo-primary);
+}
+
+.layout-main {
+  flex: 1;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 1.1rem;
+  color: var(--obo-text-muted);
+}
