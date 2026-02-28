@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useEntries } from '../hooks/useEntries'
-import { slotsToMinutes, formatDuration, DAY_NAMES, MONTH_NAMES, ACTIVITIES } from '../lib/utils'
+import { slotsToMinutes, formatDuration, DAY_NAMES, MONTH_NAMES, ACTIVITIES, getDefaultSlots, getDefaultSlotForAdd } from '../lib/utils'
+import { getJoursFeries } from '../lib/joursFeries'
 import './Today.css'
 
 const DAY_TYPES = [
   { value: 'normal', label: 'Normal' },
-  { value: 'ferie', label: 'Férié' },
   { value: 'cp', label: 'CP' },
   { value: 'recup', label: 'Récup' },
 ]
@@ -27,26 +27,24 @@ export default function Today() {
   const dateLabel = `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${d.getDate()} ${monthName ? monthName.charAt(0).toUpperCase() + monthName.slice(1) : ''} ${d.getFullYear()}`
   const initialEntry = entries[dateStr]
 
-  const [dayType, setDayType] = useState(initialEntry?.day_type || 'normal')
-  const [ferieTravaille, setFerieTravaille] = useState(!!(initialEntry?.day_type === 'ferie' && initialEntry?.slots?.length))
-  const [slots, setSlots] = useState(initialEntry?.slots?.length ? [...initialEntry.slots] : [{ start: '08:00', end: '12:00' }, { start: '13:00', end: '17:00' }])
-  const [activity, setActivity] = useState(initialEntry?.activity || '')
+  const [dayType, setDayType] = useState(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
+  const [slots, setSlots] = useState(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
+  const [activity, setActivity] = useState(initialEntry?.activity || 'Dépôt')
   const [note, setNote] = useState(initialEntry?.note || '')
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    setDayType(initialEntry?.day_type || 'normal')
-    setFerieTravaille(!!(initialEntry?.day_type === 'ferie' && initialEntry?.slots?.length))
-    setSlots(initialEntry?.slots?.length ? [...initialEntry.slots] : [{ start: '08:00', end: '12:00' }, { start: '13:00', end: '17:00' }])
-    setActivity(initialEntry?.activity || '')
+    setDayType(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
+    setSlots(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
+    setActivity(initialEntry?.activity || 'Dépôt')
     setNote(initialEntry?.note || '')
   }, [initialEntry])
 
-  const totalMinutes = (dayType === 'normal' || (dayType === 'ferie' && ferieTravaille)) ? slotsToMinutes(slots) : 0
-  const showSlots = dayType === 'normal' || (dayType === 'ferie' && ferieTravaille)
+  const totalMinutes = dayType === 'normal' ? slotsToMinutes(slots) : 0
+  const showSlots = dayType === 'normal'
 
   function addSlot() {
-    setSlots((s) => [...s, { start: '09:00', end: '17:00' }])
+    setSlots((s) => [...s, getDefaultSlotForAdd()])
   }
 
   function removeSlot(i) {
@@ -59,9 +57,14 @@ export default function Today() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    let savedDayType = dayType
+    if (showSlots && slots.length > 0 && dateStr) {
+      const year = parseInt(dateStr.slice(0, 4), 10)
+      if (getJoursFeries(year).has(dateStr)) savedDayType = 'ferie'
+    }
     const payload = {
-      day_type: dayType,
-      slots: showSlots ? slots : [],
+      day_type: savedDayType,
+      slots: (savedDayType === 'normal' || savedDayType === 'ferie') ? slots : [],
       activity: activity || null,
       note: note || null,
       total_minutes: totalMinutes,
@@ -87,12 +90,6 @@ export default function Today() {
             ))}
           </select>
         </label>
-        {dayType === 'ferie' && (
-          <label className="checkbox-label">
-            <input type="checkbox" checked={ferieTravaille} onChange={(e) => setFerieTravaille(e.target.checked)} />
-            Férié travaillé
-          </label>
-        )}
         {showSlots && (
           <>
             <div className="slots-block">

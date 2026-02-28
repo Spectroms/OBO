@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useEntries } from '../hooks/useEntries'
 import { useReminder } from '../hooks/useReminder'
 import ExportButton from '../components/ExportButton'
+import { supabase, hasSupabase } from '../lib/supabaseClient'
 import { getJoursFeries } from '../lib/joursFeries'
 import { getMonthRecap, formatDuration, formatDateStrFromDate } from '../lib/utils'
 import DayEditor from '../components/DayEditor'
@@ -22,6 +23,18 @@ export default function Calendar() {
 
   const [viewDate, setViewDate] = useState(() => new Date())
   const [editorDate, setEditorDate] = useState(null)
+  const [exportDisplayName, setExportDisplayName] = useState('')
+
+  useEffect(() => {
+    if (profile?.display_name?.trim()) {
+      setExportDisplayName(profile.display_name.trim())
+      return
+    }
+    if (!user?.id || !hasSupabase()) return
+    supabase.rpc('get_my_display_name').then(({ data }) => {
+      if (data != null && String(data).trim()) setExportDisplayName(String(data).trim())
+    })
+  }, [user?.id, profile?.display_name])
 
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth() + 1
@@ -66,7 +79,7 @@ export default function Calendar() {
 
   return (
     <div className="calendar-page">
-      <ExportButton entries={entries} year={year} month={month} displayName={profile?.display_name} />
+      <ExportButton entries={entries} year={year} month={month} displayName={profile?.display_name?.trim() || exportDisplayName} />
 
       <div className="calendar-nav">
         <button type="button" onClick={prevMonth}>←</button>
@@ -91,14 +104,18 @@ export default function Calendar() {
                   const dateStr = formatDateStrFromDate(d)
                   const ent = entries[dateStr]
                   const isFerie = joursFeriesSet.has(dateStr)
+                  const isDimanche = d.getDay() === 0
                   const isToday = dateStr === today
                   const hasEntry = !!ent
-                  const label = ent?.day_type === 'cp' ? 'CP' : ent?.day_type === 'recup' ? 'Récup' : ent?.day_type === 'ferie' && !ent?.slots?.length ? 'Férié' : ent?.total_minutes ? formatDuration(ent.total_minutes) : ''
+                  const dayTypeClass = !ent ? '' : ent.day_type === 'cp' ? 'day-cp' : ent.day_type === 'recup' ? 'day-recup' : ent.day_type === 'ferie' && !ent?.slots?.length ? 'day-ferie' : ent.day_type === 'ferie' && ent?.slots?.length ? 'day-ferie-worked' : 'day-normal'
+                  const activityClass = ent?.activity && ent.activity.trim() ? `activity-${ent.activity.trim().toLowerCase().replace(/\s/g, '-').replace(/é/g, 'e').replace(/è/g, 'e')}` : ''
+                  const label = ent?.day_type === 'cp' ? 'CP' : ent?.day_type === 'recup' ? 'Récup' : ent?.day_type === 'ferie' && !ent?.slots?.length ? 'Férié chômé' : ent?.total_minutes ? formatDuration(ent.total_minutes) : ''
                   return (
-                    <td key={di} className={`cell ${isToday ? 'today' : ''} ${hasEntry ? 'has-entry' : ''} ${isFerie ? 'ferie' : ''}`}>
+                    <td key={di} className={`cell ${isToday ? 'today' : ''} ${hasEntry ? 'has-entry' : ''} ${isDimanche ? 'dimanche' : ''} ${isFerie ? 'ferie' : ''} ${dayTypeClass} ${activityClass}`}>
                       <button type="button" className="cell-inner" onClick={() => openEditor(dateStr)}>
                         <span className="cell-day">{d.getDate()}</span>
                         {label && <span className="cell-label">{label}</span>}
+                        {ent?.activity && ent.activity.trim() && <span className="cell-activity-bar" title={ent.activity} aria-hidden />}
                       </button>
                     </td>
                   )
@@ -113,7 +130,8 @@ export default function Calendar() {
         <h2>Récap du mois</h2>
         <p>Total : {formatDuration(recap.totalMinutes)}</p>
         <ul>
-          {recap.ferieCount > 0 && <li>{recap.ferieCount} jour(s) férié(s){recap.ferieTravaillesCount > 0 ? ` dont ${recap.ferieTravaillesCount} travaillé(s)` : ''}</li>}
+          {recap.ferieCount - recap.ferieTravaillesCount > 0 && <li>{recap.ferieCount - recap.ferieTravaillesCount} jour(s) férié(s) chômé(s)</li>}
+          {recap.ferieTravaillesCount > 0 && <li>{recap.ferieTravaillesCount} jour(s) férié(s) travaillé(s)</li>}
           {recap.cpCount > 0 && <li>{recap.cpCount} CP</li>}
           {recap.recupCount > 0 && <li>{recap.recupCount} récup</li>}
           {recap.dimancheCount > 0 && <li>{recap.dimancheCount} dimanche(s) travaillé(s)</li>}

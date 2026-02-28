@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
-import { slotsToMinutes, formatDuration, DAY_NAMES, ACTIVITIES } from '../lib/utils'
+import { slotsToMinutes, formatDuration, DAY_NAMES, ACTIVITIES, getDefaultSlots, getDefaultSlotForAdd } from '../lib/utils'
+import { getJoursFeries } from '../lib/joursFeries'
 import './DayEditor.css'
 
 const DAY_TYPES = [
   { value: 'normal', label: 'Normal' },
-  { value: 'ferie', label: 'Férié' },
   { value: 'cp', label: 'CP' },
   { value: 'recup', label: 'Récup' },
 ]
@@ -12,24 +12,22 @@ const DAY_TYPES = [
 export default function DayEditor({ dateStr, initialEntry, onSave, onClose }) {
   const d = dateStr ? new Date(dateStr + 'T12:00:00') : new Date()
   const dayName = DAY_NAMES[d.getDay()]
-  const [dayType, setDayType] = useState(initialEntry?.day_type || 'normal')
-  const [ferieTravaille, setFerieTravaille] = useState(!!(initialEntry?.day_type === 'ferie' && initialEntry?.slots?.length))
-  const [slots, setSlots] = useState(initialEntry?.slots?.length ? [...initialEntry.slots] : [{ start: '08:00', end: '12:00' }, { start: '13:00', end: '17:00' }])
-  const [activity, setActivity] = useState(initialEntry?.activity || '')
+  const [dayType, setDayType] = useState(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
+  const [slots, setSlots] = useState(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
+  const [activity, setActivity] = useState(initialEntry?.activity || 'Dépôt')
   const [note, setNote] = useState(initialEntry?.note || '')
 
   useEffect(() => {
-    setDayType(initialEntry?.day_type || 'normal')
-    setFerieTravaille(!!(initialEntry?.day_type === 'ferie' && initialEntry?.slots?.length))
-    setSlots(initialEntry?.slots?.length ? [...initialEntry.slots] : [{ start: '08:00', end: '12:00' }, { start: '13:00', end: '17:00' }])
-    setActivity(initialEntry?.activity || '')
+    setDayType(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
+    setSlots(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
+    setActivity(initialEntry?.activity || 'Dépôt')
     setNote(initialEntry?.note || '')
   }, [dateStr, initialEntry])
 
-  const totalMinutes = (dayType === 'normal' || (dayType === 'ferie' && ferieTravaille)) ? slotsToMinutes(slots) : 0
+  const totalMinutes = dayType === 'normal' ? slotsToMinutes(slots) : 0
 
   function addSlot() {
-    setSlots((s) => [...s, { start: '09:00', end: '17:00' }])
+    setSlots((s) => [...s, getDefaultSlotForAdd()])
   }
 
   function removeSlot(i) {
@@ -42,9 +40,15 @@ export default function DayEditor({ dateStr, initialEntry, onSave, onClose }) {
 
   function handleSubmit(e) {
     e.preventDefault()
+    let savedDayType = dayType
+    const hasSlots = dayType === 'normal' && slots.length > 0
+    if (hasSlots && dateStr) {
+      const year = parseInt(dateStr.slice(0, 4), 10)
+      if (getJoursFeries(year).has(dateStr)) savedDayType = 'ferie'
+    }
     const payload = {
-      day_type: dayType,
-      slots: (dayType === 'normal' || (dayType === 'ferie' && ferieTravaille)) ? slots : [],
+      day_type: savedDayType,
+      slots: (savedDayType === 'normal' || savedDayType === 'ferie') ? slots : [],
       activity: activity || null,
       note: note || null,
       total_minutes: totalMinutes,
@@ -53,7 +57,7 @@ export default function DayEditor({ dateStr, initialEntry, onSave, onClose }) {
     onClose()
   }
 
-  const showSlots = dayType === 'normal' || (dayType === 'ferie' && ferieTravaille)
+  const showSlots = dayType === 'normal'
 
   return (
     <div className="day-editor-overlay" onClick={onClose}>
@@ -70,12 +74,6 @@ export default function DayEditor({ dateStr, initialEntry, onSave, onClose }) {
               ))}
             </select>
           </label>
-          {dayType === 'ferie' && (
-            <label className="checkbox-label">
-              <input type="checkbox" checked={ferieTravaille} onChange={(e) => setFerieTravaille(e.target.checked)} />
-              Férié travaillé
-            </label>
-          )}
           {showSlots && (
             <>
               <div className="slots-block">

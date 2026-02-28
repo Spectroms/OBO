@@ -63,6 +63,18 @@ grant execute on function public.update_my_display_name(text) to anon;
 
 ---
 
+## Étape 3b : Afficher le nom (Paramètres + export PDF)
+
+Sans cette étape, le nom peut ne pas s’afficher dans Paramètres ni dans le PDF exporté.
+
+1. Dans **SQL Editor**, **New query**, puis ouvre le fichier **`supabase/migrations/006_get_my_display_name.sql`**.
+2. Copie tout le contenu, colle dans le SQL Editor, clique sur **Run**.
+3. Vérifie qu’il n’y a pas d’erreur.
+
+→ Le nom sera chargé correctement en Paramètres et dans l’export PDF.
+
+---
+
 ## Étape 4 : Activer la connexion par email
 
 1. Dans le menu **à gauche** de Supabase, clique sur **Authentication** (icône cadenas).
@@ -79,6 +91,7 @@ grant execute on function public.update_my_display_name(text) to anon;
 - [ ] Étape 1 : Tu as ouvert le SQL Editor dans ton projet Supabase.
 - [ ] Étape 2 : Tu as exécuté le contenu de `001_initial.sql` (Run, pas d’erreur).
 - [ ] Étape 3 : Tu as exécuté le bloc SQL « update_my_display_name » ci-dessus (Run, pas d’erreur).
+- [ ] Étape 3b : Tu as exécuté le contenu de `006_get_my_display_name.sql` (Run, pas d’erreur).
 - [ ] Étape 4 : Tu as activé le provider Email dans Authentication.
 
 Si les 4 sont faits, l’app peut : créer un compte, enregistrer le nom, sauvegarder les horaires.

@@ -70,6 +70,20 @@
   opacity: 0.5;
 }
 
+/* Couleur de base : dimanches et jours fériés (même sans horaires) */
+.calendar-grid td.dimanche .cell-inner {
+  background: rgba(255, 167, 38, 0.2);
+}
+[data-theme="dark"] .calendar-grid td.dimanche .cell-inner {
+  background: rgba(255, 167, 38, 0.18);
+}
+.calendar-grid td.ferie .cell-inner {
+  background: rgba(255, 193, 7, 0.15);
+}
+[data-theme="dark"] .calendar-grid td.ferie .cell-inner {
+  background: rgba(255, 193, 7, 0.12);
+}
+
 .calendar-grid .cell-inner {
   display: flex;
   flex-direction: column;
@@ -96,8 +110,53 @@
 }
 
 .calendar-grid td.has-entry .cell-inner {
-  background: rgba(34, 62, 126, 0.1);
+  background: rgba(34, 62, 126, 0.08);
 }
+
+/* Code couleur : type de jour */
+.calendar-grid td.day-normal .cell-inner {
+  background: rgba(34, 62, 126, 0.12);
+}
+.calendar-grid td.day-cp .cell-inner {
+  background: rgba(66, 133, 244, 0.2);
+}
+.calendar-grid td.day-recup .cell-inner {
+  background: rgba(76, 175, 80, 0.2);
+}
+.calendar-grid td.day-ferie .cell-inner {
+  background: rgba(255, 193, 7, 0.25);
+}
+.calendar-grid td.day-ferie-worked .cell-inner {
+  background: rgba(156, 39, 176, 0.15);
+}
+
+/* Dimanche / férié avec horaires : jaune orangé plus visible (prioritaire sur le type de jour) */
+.calendar-grid td.dimanche.has-entry .cell-inner,
+.calendar-grid td.ferie.has-entry .cell-inner {
+  background: rgba(255, 167, 38, 0.45);
+}
+[data-theme="dark"] .calendar-grid td.dimanche.has-entry .cell-inner,
+[data-theme="dark"] .calendar-grid td.ferie.has-entry .cell-inner {
+  background: rgba(255, 167, 38, 0.4);
+}
+
+/* Code couleur : activité (barre en bas de la cellule) */
+.cell-inner {
+  position: relative;
+}
+.cell-activity-bar {
+  display: block;
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  right: 2px;
+  height: 3px;
+  border-radius: 2px;
+}
+.calendar-grid td.activity-depot .cell-activity-bar { background: #223E7E; }
+.calendar-grid td.activity-contenaire .cell-activity-bar { background: #2d6a4f; }
+.calendar-grid td.activity-deplacement .cell-activity-bar { background: #7b2cbf; }
+.calendar-grid td.activity-demenagement .cell-activity-bar { background: #e85d04; }
 
 .calendar-grid td.ferie .cell-day {
   color: var(--obo-text-muted);

@@ -87,6 +87,21 @@ grant execute on function public.update_my_display_name(text) to anon;
 
 ---
 
+## 3b. Afficher le nom (Paramètres + export PDF)
+
+Sans cette étape, le nom peut ne pas s’afficher dans Paramètres ni dans le PDF.
+
+1. Dans **SQL Editor**, clique sur **New query**.
+2. Ouvre le fichier **`supabase/migrations/006_get_my_display_name.sql`** dans ton projet OBO.
+3. Copie tout le contenu, colle dans le SQL Editor, clique sur **Run**.
+4. Pas d’erreur en rouge.
+
+**Comment vérifier ?** Dans Supabase → **Database** → **Functions**, tu dois voir une fonction **`get_my_display_name`**.
+
+- [ ] J’ai exécuté `006_get_my_display_name.sql` dans le SQL Editor (Run, pas d’erreur)
+
+---
+
 ## 4. Activer la connexion par email
 
 1. Dans Supabase, menu de **gauche** → **Authentication**.

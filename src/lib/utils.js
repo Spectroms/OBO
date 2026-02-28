@@ -1,3 +1,23 @@
+export const SUMMER_HOURS_KEY = 'obo_horaires_ete'
+
+const DEFAULT_SLOTS = [{ start: '08:00', end: '12:00' }, { start: '13:00', end: '16:30' }]
+const SUMMER_SLOTS = [{ start: '07:00', end: '12:00' }, { start: '13:00', end: '15:30' }]
+
+export function isSummerHoursEnabled() {
+  if (typeof localStorage === 'undefined') return false
+  return localStorage.getItem(SUMMER_HOURS_KEY) === '1'
+}
+
+export function getDefaultSlots() {
+  return isSummerHoursEnabled() ? [...SUMMER_SLOTS.map((s) => ({ ...s }))] : [...DEFAULT_SLOTS.map((s) => ({ ...s }))]
+}
+
+export function getDefaultSlotForAdd() {
+  const slots = getDefaultSlots()
+  const lastEnd = slots[slots.length - 1]?.end || '16:30'
+  return { start: '09:00', end: lastEnd }
+}
+
 export function slotsToMinutes(slots) {
   if (!Array.isArray(slots) || slots.length === 0) return 0
   let total = 0

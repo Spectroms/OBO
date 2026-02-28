@@ -93,7 +93,7 @@ export default function Dashboard() {
                 .map(([date, ent]) => (
                   <tr key={date}>
                     <td>{date}</td>
-                    <td>{ent.day_type === 'cp' ? 'CP' : ent.day_type === 'recup' ? 'Récup' : ent.day_type === 'ferie' ? 'Férié' : 'Normal'}</td>
+                    <td>{ent.day_type === 'cp' ? 'CP' : ent.day_type === 'recup' ? 'Récup' : ent.day_type === 'ferie' ? (ent.slots?.length ? 'Férié travaillé' : 'Férié chômé') : 'Normal'}</td>
                     <td>{ent.total_minutes ? formatDuration(ent.total_minutes) : '—'}</td>
                     <td>{(ent.activity || ent.note) ? [ent.activity, ent.note].filter(Boolean).join(' — ') : '—'}</td>
                   </tr>

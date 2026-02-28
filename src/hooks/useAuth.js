@@ -28,11 +28,11 @@ export function useAuth() {
   }, [])
 
   async function fetchProfile(userId, userEmail) {
-    if (!hasSupabase()) return
+    if (!hasSupabase()) return null
     let { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
     if (!data) {
       await supabase.from('profiles').upsert(
-        { id: userId, email: userEmail || '', display_name: null, role: 'employee' },
+        { id: userId, email: userEmail || '', role: 'employee' },
         { onConflict: 'id' }
       )
       const res = await supabase.from('profiles').select('*').eq('id', userId).single()
@@ -40,9 +40,12 @@ export function useAuth() {
     }
     setProfile(data ?? null)
     setLoading(false)
+    return data ?? null
   }
 
   const canViewTeam = profile?.role === 'chef_depot' || profile?.role === 'patronne'
 
-  return { user, profile, loading, canViewTeam, refreshProfile: () => user && fetchProfile(user.id, user.email) }
+  const refreshProfile = () => (user ? fetchProfile(user.id, user.email) : Promise.resolve(null))
+
+  return { user, profile, loading, canViewTeam, refreshProfile }
 }

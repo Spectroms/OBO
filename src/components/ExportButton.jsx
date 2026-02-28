@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf'
 import * as XLSX from 'xlsx'
 import { getMonthRecap, formatDuration, formatDurationDecimal, MONTH_NAMES } from '../lib/utils'
 import { getJoursFeries } from '../lib/joursFeries'
+import { supabase, hasSupabase } from '../lib/supabaseClient'
 import './ExportButton.css'
 
 export default function ExportButton({ entries, year, month, displayName }) {
@@ -14,6 +15,12 @@ export default function ExportButton({ entries, year, month, displayName }) {
   const monthLabel = MONTH_NAMES[month - 1] ? MONTH_NAMES[month - 1].charAt(0).toUpperCase() + MONTH_NAMES[month - 1].slice(1) : ''
   const periodLabel = `${monthLabel} ${year}`
 
+  // Nom de fichier sans accents pour que le navigateur l’utilise bien (export PDF/Excel)
+  function safeFilename(extension) {
+    const base = `Horaires-${monthLabel}-${year}`.normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    return `${base}.${extension}`
+  }
+
   function getEntriesForMonth() {
     const result = []
     const lastDay = new Date(year, month, 0).getDate()
@@ -23,7 +30,7 @@ export default function ExportButton({ entries, year, month, displayName }) {
       const ent = entries[dateStr]
       if (!ent) continue
       const duration = useDecimal ? formatDurationDecimal(ent.total_minutes || 0) : formatDuration(ent.total_minutes || 0)
-      const type = ent.day_type === 'cp' ? 'CP' : ent.day_type === 'recup' ? 'Récup' : ent.day_type === 'ferie' ? (ent.slots?.length ? 'Férié travaillé' : 'Férié') : 'Normal'
+      const type = ent.day_type === 'cp' ? 'CP' : ent.day_type === 'recup' ? 'Récup' : ent.day_type === 'ferie' ? (ent.slots?.length ? 'Férié travaillé' : 'Férié chômé') : 'Normal'
       result.push({ date: `${d} ${monthName}`, type, créneaux: (ent.slots || []).map((s) => `${s.start}-${s.end}`).join(' '), durée: duration, activité: ent.activity || '', note: ent.note || '' })
     }
     return result
@@ -56,11 +63,22 @@ export default function ExportButton({ entries, year, month, displayName }) {
     }
     doc.text(`Total : ${formatDuration(recap.totalMinutes)}`, 14, y)
     y += 5
-    if (recap.ferieCount) doc.text(`${recap.ferieCount} jour(s) férié(s) dont ${recap.ferieTravaillesCount} travaillé(s)`, 14, y), (y += 5)
+    if (recap.ferieCount - recap.ferieTravaillesCount > 0) doc.text(`${recap.ferieCount - recap.ferieTravaillesCount} jour(s) férié(s) chômé(s)`, 14, y), (y += 5)
+    if (recap.ferieTravaillesCount > 0) doc.text(`${recap.ferieTravaillesCount} jour(s) férié(s) travaillé(s)`, 14, y), (y += 5)
     if (recap.cpCount) doc.text(`${recap.cpCount} CP`, 14, y), (y += 5)
     if (recap.recupCount) doc.text(`${recap.recupCount} récup`, 14, y), (y += 5)
     if (recap.dimancheCount) doc.text(`${recap.dimancheCount} dimanche(s) travaillé(s)`, 14, y)
-    doc.save(`obo-horaires-${periodLabel.replace(/\s+/g, '-')}.pdf`)
+    const filename = safeFilename('pdf')
+    const blob = doc.output('blob')
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 500)
     setLoading(false)
   }
 
@@ -81,8 +99,8 @@ export default function ExportButton({ entries, year, month, displayName }) {
       ['Période', periodLabel],
       [],
       ['Total heures', formatDuration(recap.totalMinutes)],
-      ['Jours fériés', recap.ferieCount],
-      ['Fériés travaillés', recap.ferieTravaillesCount],
+      ['Jours fériés chômés', recap.ferieCount - recap.ferieTravaillesCount],
+      ['Jours fériés travaillés', recap.ferieTravaillesCount],
       ['CP', recap.cpCount],
       ['Récup', recap.recupCount],
       ['Dimanches travaillés', recap.dimancheCount],
@@ -90,13 +108,31 @@ export default function ExportButton({ entries, year, month, displayName }) {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Horaires')
     XLSX.utils.book_append_sheet(wb, recapSheet, 'Récap')
-    XLSX.writeFile(wb, `obo-horaires-${periodLabel.replace(/\s+/g, '-')}.xlsx`)
+    XLSX.writeFile(wb, safeFilename('xlsx'))
     setLoading(false)
   }
 
-  function handleExport() {
-    if (format === 'pdf') exportPDF()
-    else exportExcel()
+  async function handleExport() {
+    if (format === 'excel') {
+      exportExcel()
+      return
+    }
+    // En production, télécharger via l’API pour que le nom du fichier soit correct (Content-Disposition)
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    const isVercel = origin.includes('vercel.app')
+    if (isVercel && hasSupabase()) {
+      setLoading(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          const url = `${origin}/api/export-pdf?year=${year}&month=${month}&token=${encodeURIComponent(session.access_token)}`
+          window.location.href = url
+          return
+        }
+      } catch (_) {}
+      setLoading(false)
+    }
+    exportPDF()
   }
 
   return (
