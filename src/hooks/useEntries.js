@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 
 const STORAGE_KEY = 'obo_entries'
@@ -39,9 +39,43 @@ function mergeEntries(local, remote, lastWriteWins = true) {
   return merged
 }
 
+function buildRow(dateStr, entry) {
+  const rawSlots = Array.isArray(entry?.slots) ? entry.slots : []
+  const slots = rawSlots.map((s) => ({
+    start: typeof s?.start === 'string' ? s.start : '08:00',
+    end: typeof s?.end === 'string' ? s.end : '17:00',
+  }))
+  const total_minutes = Math.round(Number(entry?.total_minutes)) || 0
+  const day_type = ['normal', 'ferie', 'cp', 'recup'].includes(entry?.day_type) ? entry.day_type : 'normal'
+  return {
+    date: dateStr,
+    day_type,
+    slots,
+    activity: entry?.activity != null && entry.activity !== '' ? String(entry.activity) : null,
+    note: entry?.note != null && entry.note !== '' ? String(entry.note) : null,
+    total_minutes,
+    updated_at: entry?.updated_at || new Date().toISOString(),
+  }
+}
+
+async function upsertToSupabase(userId, dateStr, entry) {
+  const row = buildRow(dateStr, entry)
+  const payload = { user_id: userId, ...row }
+  const opts = { onConflict: 'user_id,date' }
+  let lastErr = null
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    const { error } = await supabase.from('entries').upsert(payload, opts)
+    if (!error) return
+    lastErr = error
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 800))
+  }
+  if (lastErr) throw lastErr
+}
+
 export function useEntries(userId) {
   const [entries, setEntries] = useState({})
   const [loading, setLoading] = useState(true)
+  const entriesRef = useRef({})
 
   const persist = useCallback((next) => {
     setEntries((prev) => {
@@ -89,40 +123,49 @@ export function useEntries(userId) {
         setEntries(merged)
         saveToStorage(userId, merged)
         setLoading(false)
+        if (navigator.onLine) {
+          ;(async () => {
+            for (const date of Object.keys(merged)) {
+              const entry = merged[date]
+              const rem = remote[date]
+              const localNewer = !rem || new Date(entry?.updated_at || 0) > new Date(rem?.updated_at || 0)
+              if (localNewer) {
+                try {
+                  await upsertToSupabase(userId, date, entry)
+                } catch (_) {}
+                if (Object.keys(merged).length > 100) await new Promise((r) => setTimeout(r, 30))
+              }
+            }
+          })()
+        }
       })
   }, [userId])
 
-  const upsertEntry = useCallback(async (date, entry) => {
-    const rawSlots = Array.isArray(entry.slots) ? entry.slots : []
-    const slots = rawSlots.map((s) => ({
-      start: typeof s?.start === 'string' ? s.start : '08:00',
-      end: typeof s?.end === 'string' ? s.end : '17:00',
-    }))
-    const total_minutes = Math.round(Number(entry.total_minutes)) || 0
-    const day_type = ['normal', 'ferie', 'cp', 'recup'].includes(entry.day_type) ? entry.day_type : 'normal'
-    const dateStr = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : date
-    const row = {
-      date: dateStr,
-      day_type,
-      slots,
-      activity: entry.activity != null && entry.activity !== '' ? String(entry.activity) : null,
-      note: entry.note != null && entry.note !== '' ? String(entry.note) : null,
-      total_minutes,
-      updated_at: new Date().toISOString(),
-    }
-    persist((prev) => ({ ...prev, [dateStr]: { ...row, user_id: userId } }))
-    if (hasSupabase() && userId) {
-      const payload = { user_id: userId, ...row }
-      const opts = { onConflict: 'user_id,date' }
-      let lastErr = null
-      for (let attempt = 0; attempt <= 2; attempt++) {
-        const { error } = await supabase.from('entries').upsert(payload, opts)
-        if (!error) break
-        lastErr = error
-        if (attempt < 2) await new Promise((r) => setTimeout(r, 800))
+  useEffect(() => {
+    entriesRef.current = entries
+  }, [entries])
+
+  useEffect(() => {
+    if (!hasSupabase() || !userId) return
+    const onOnline = async () => {
+      const current = entriesRef.current
+      for (const [date, entry] of Object.entries(current)) {
+        try {
+          await upsertToSupabase(userId, date, entry)
+        } catch (_) {}
+        if (Object.keys(current).length > 50) await new Promise((r) => setTimeout(r, 30))
       }
-      if (lastErr) throw lastErr
     }
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [userId])
+
+  const upsertEntry = useCallback(async (date, entry) => {
+    const dateStr = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : date
+    const row = buildRow(dateStr, { ...entry, updated_at: new Date().toISOString() })
+    persist((prev) => ({ ...prev, [dateStr]: { ...row, user_id: userId } }))
+    if (!navigator.onLine) return
+    if (hasSupabase() && userId) await upsertToSupabase(userId, dateStr, { ...entry, ...row })
   }, [userId, persist])
 
   const deleteEntry = useCallback(async (date) => {
