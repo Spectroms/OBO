@@ -11,6 +11,13 @@ import './Calendar.css'
 
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+const ACTIVITY_LEGEND = [
+  { name: 'Dépôt', color: '#223E7E' },
+  { name: 'Foire', color: '#c1121f' },
+  { name: 'Contenaire', color: '#2d6a4f' },
+  { name: 'Déplacement', color: '#7b2cbf' },
+  { name: 'Déménagement', color: '#e85d04' },
+]
 
 export default function Calendar() {
   const { user, profile } = useAuth()
@@ -24,6 +31,7 @@ export default function Calendar() {
   const [viewDate, setViewDate] = useState(() => new Date())
   const [editorDate, setEditorDate] = useState(null)
   const [exportDisplayName, setExportDisplayName] = useState('')
+  const [legendOpen, setLegendOpen] = useState(false)
 
   useEffect(() => {
     if (profile?.display_name?.trim()) {
@@ -79,13 +87,36 @@ export default function Calendar() {
 
   return (
     <div className="calendar-page">
-      <ExportButton entries={entries} year={year} month={month} displayName={profile?.display_name?.trim() || exportDisplayName} />
-
       <div className="calendar-nav">
         <button type="button" onClick={prevMonth}>←</button>
         <h1>{MONTHS[month - 1]} {year}</h1>
         <button type="button" onClick={nextMonth}>→</button>
       </div>
+
+      <button
+        type="button"
+        className="calendar-legend-toggle"
+        onClick={() => setLegendOpen((o) => !o)}
+        title="Légende des couleurs par activité"
+        aria-expanded={legendOpen}
+      >
+        <span className="calendar-legend-icon" aria-hidden>◇</span>
+        <span className="calendar-legend-label">{legendOpen ? 'Masquer la légende' : 'Légende activités'}</span>
+      </button>
+
+      {legendOpen && (
+        <div className="calendar-legend-panel" role="region" aria-label="Légende des couleurs par activité">
+          <h3 className="calendar-legend-title">Activités</h3>
+          <ul className="calendar-legend-list">
+            {ACTIVITY_LEGEND.map(({ name, color }) => (
+              <li key={name} className="calendar-legend-item">
+                <span className="calendar-legend-bar" style={{ background: color }} />
+                <span>{name}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="calendar-grid-wrap">
         <table className="calendar-grid">
@@ -137,6 +168,8 @@ export default function Calendar() {
           {recap.dimancheCount > 0 && <li>{recap.dimancheCount} dimanche(s) travaillé(s)</li>}
         </ul>
       </section>
+
+      <ExportButton entries={entries} year={year} month={month} displayName={profile?.display_name?.trim() || exportDisplayName} />
 
       {editorDate && (
         <DayEditor

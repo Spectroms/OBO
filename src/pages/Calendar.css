@@ -37,6 +37,71 @@
   color: var(--obo-primary);
 }
 
+.calendar-legend-toggle {
+  width: auto;
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--obo-card-bg);
+  border: 1px solid var(--obo-border);
+  border-radius: 6px;
+  color: var(--obo-text);
+  cursor: pointer;
+}
+
+.calendar-legend-toggle:hover {
+  border-color: var(--obo-primary);
+  color: var(--obo-primary);
+}
+
+.calendar-legend-icon {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+
+.calendar-legend-panel {
+  background: var(--obo-card-bg);
+  border: 1px solid var(--obo-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.calendar-legend-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--obo-text);
+}
+
+.calendar-legend-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+}
+
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--obo-text);
+}
+
+.calendar-legend-bar {
+  display: inline-block;
+  width: 16px;
+  height: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
 .calendar-grid-wrap {
   overflow-x: auto;
   margin-bottom: 1.5rem;
