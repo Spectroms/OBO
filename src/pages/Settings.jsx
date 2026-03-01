@@ -6,12 +6,13 @@ import { useTheme } from '../hooks/useTheme'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 import { SUMMER_HOURS_KEY } from '../lib/utils'
 import { REMINDER_ENABLED_KEY } from '../hooks/useReminder'
+import { sendTestNotification } from '../lib/notifications'
 import './Settings.css'
 
 const REMINDER_KEY = 'obo_reminder_time'
 
 export default function Settings() {
-  const { user, profile, refreshProfile } = useAuth()
+  const { user, profile, refreshProfile, canViewTeam } = useAuth()
   const { upsertEntry } = useEntries(user?.id)
   const [theme, setTheme] = useTheme()
   const navigate = useNavigate()
@@ -33,6 +34,9 @@ export default function Settings() {
   const [profileNameLoaded, setProfileNameLoaded] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
+  const [adminProfiles, setAdminProfiles] = useState([])
+  const [importForUserId, setImportForUserId] = useState(null)
+  const [testNotificationMsg, setTestNotificationMsg] = useState(null)
 
   useEffect(() => {
     const name = profile?.display_name || ''
@@ -43,6 +47,14 @@ export default function Settings() {
   useEffect(() => {
     if (user) refreshProfile?.()
   }, [user])
+
+  useEffect(() => {
+    if (!hasSupabase() || !canViewTeam) return
+    supabase.from('profiles').select('id, display_name, email').order('display_name').then(({ data }) => {
+      setAdminProfiles(data || [])
+      setImportForUserId((prev) => (prev == null && data?.length ? data[0].id : prev))
+    })
+  }, [canViewTeam])
 
   useEffect(() => {
     if (!user || !hasSupabase()) {
@@ -291,36 +303,68 @@ export default function Settings() {
           type="button"
           className="btn-secondary"
           style={{ marginTop: '0.25rem' }}
-          onClick={() => {
-            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-              new Notification('OBO Horaires', { body: 'Pensez à saisir vos horaires du jour.', tag: 'obo-reminder-test' })
-            } else if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-              Notification.requestPermission().then((p) => {
-                if (p === 'granted') new Notification('OBO Horaires', { body: 'Pensez à saisir vos horaires du jour.', tag: 'obo-reminder-test' })
-              })
+          onClick={async () => {
+            setTestNotificationMsg(null)
+            const result = await sendTestNotification()
+            if (result.ok) {
+              setTestNotificationMsg('Notification envoyée.')
             } else {
-              alert('Pour autoriser les notifications : menu Chrome (⋮) → Paramètres du site → Notifications → Autoriser. Ou Paramètres Chrome → Confidentialité → Paramètres des sites → Notifications.')
+              setTestNotificationMsg(result.message || 'Échec du test.')
             }
+            if (result.ok) setTimeout(() => setTestNotificationMsg(null), 4000)
           }}
         >
           Tester la notification
         </button>
+        {testNotificationMsg && (
+          <p className="settings-hint" style={{ marginTop: '0.5rem', color: testNotificationMsg.includes('envoyée') ? 'var(--obo-primary)' : '#c00' }}>
+            {testNotificationMsg}
+          </p>
+        )}
       </section>
 
+      {canViewTeam && (
       <section className="settings-section">
         <h2>Importer des horaires</h2>
-        <p className="settings-hint">Fichier JSON généré à partir de tes horaires (ex. horraire perso/entries-import.json). Les entrées sont ajoutées à ton compte.</p>
+        <p className="settings-hint">Réservé aux comptes administrateurs. Choisissez la personne concernée puis uploadez un fichier JSON (ex. entries-import.json). Les entrées sont ajoutées au compte sélectionné.</p>
+        <label>
+          Importer pour
+          <select value={importForUserId || ''} onChange={(e) => setImportForUserId(e.target.value || null)} disabled={importing}>
+            <option value="">— Choisir —</option>
+            {adminProfiles.map((p) => (
+              <option key={p.id} value={p.id}>{p.display_name || p.email || p.id}</option>
+            ))}
+          </select>
+        </label>
         <label>
           Fichier JSON
           <input
             type="file"
             accept=".json"
-            disabled={importing}
+            disabled={importing || !importForUserId}
             onChange={async (e) => {
               const file = e.target.files?.[0]
-              if (!file || !user?.id || !upsertEntry) return
+              const targetUserId = importForUserId
+              if (!file || !targetUserId || !hasSupabase()) return
               setImporting(true)
               setImportResult(null)
+              const buildRow = (dateStr, entry) => {
+                const rawSlots = Array.isArray(entry?.slots) ? entry.slots : []
+                const slots = rawSlots.map((s) => ({
+                  start: typeof s?.start === 'string' ? s.start : '08:00',
+                  end: typeof s?.end === 'string' ? s.end : '17:00',
+                }))
+                return {
+                  user_id: targetUserId,
+                  date: dateStr,
+                  day_type: ['normal', 'ferie', 'cp', 'recup'].includes(entry?.day_type) ? entry.day_type : 'normal',
+                  slots,
+                  activity: entry?.activity != null && entry.activity !== '' ? String(entry.activity) : null,
+                  note: entry?.note != null && entry.note !== '' ? String(entry.note) : null,
+                  total_minutes: Math.round(Number(entry?.total_minutes)) || 0,
+                  updated_at: entry?.updated_at || new Date().toISOString(),
+                }
+              }
               try {
                 const text = await file.text()
                 const data = JSON.parse(text)
@@ -331,20 +375,16 @@ export default function Settings() {
                 for (const entry of list) {
                   if (!entry?.date || !dateOk(entry.date)) continue
                   try {
-                    await upsertEntry(entry.date, {
-                      day_type: entry.day_type || 'normal',
-                      slots: Array.isArray(entry.slots) ? entry.slots : [],
-                      activity: entry.activity ?? null,
-                      note: entry.note ?? null,
-                      total_minutes: Math.round(Number(entry.total_minutes)) || 0,
-                    })
-                    ok++
+                    const row = buildRow(entry.date, entry)
+                    const { error } = await supabase.from('entries').upsert(row, { onConflict: 'user_id,date' })
+                    if (!error) ok++
+                    else err++
                   } catch (_) {
                     err++
                   }
                   if (list.length > 50) await new Promise((r) => setTimeout(r, 30))
                 }
-                setImportResult(`Import terminé : ${ok} entrée(s) importée(s)${err ? `, ${err} erreur(s)` : ''}.`)
+                setImportResult(`Import terminé : ${ok} entrée(s) pour ce compte${err ? `, ${err} erreur(s)` : ''}.`)
               } catch (err) {
                 setImportResult('Erreur : fichier invalide ou illisible.')
               }
@@ -356,6 +396,7 @@ export default function Settings() {
         {importing && <p className="settings-hint">Import en cours…</p>}
         {importResult && <p className="settings-hint" style={{ marginTop: '0.5rem', color: 'var(--obo-primary)' }}>{importResult}</p>}
       </section>
+      )}
 
       <section className="settings-section">
         <h2>Compte</h2>

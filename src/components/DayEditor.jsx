@@ -9,7 +9,7 @@ const DAY_TYPES = [
   { value: 'recup', label: 'Récup' },
 ]
 
-export default function DayEditor({ dateStr, initialEntry, onSave, onClose }) {
+export default function DayEditor({ dateStr, initialEntry, onSave, onClose, onDelete }) {
   const d = dateStr ? new Date(dateStr + 'T12:00:00') : new Date()
   const dayName = DAY_NAMES[d.getDay()]
   const [dayType, setDayType] = useState(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
@@ -106,6 +106,15 @@ export default function DayEditor({ dateStr, initialEntry, onSave, onClose }) {
             <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. VILLENEUVE, AVIGNON" />
           </label>
           <div className="day-editor-actions">
+            {initialEntry && onDelete && (
+              <button
+                type="button"
+                className="day-editor-delete"
+                onClick={() => { onDelete(dateStr); onClose(); }}
+              >
+                Réinitialiser
+              </button>
+            )}
             <button type="button" onClick={onClose}>Annuler</button>
             <button type="submit" className="btn-primary">Enregistrer</button>
           </div>

@@ -99,8 +99,10 @@
 
 .day-editor-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 1.25rem;
 }
 
@@ -110,6 +112,24 @@
   border: 1px solid var(--obo-border);
   background: var(--obo-bg);
   color: var(--obo-text);
+}
+
+.day-editor-actions .day-editor-delete {
+  padding: 0.5rem 1rem;
+  border: 1px solid #c00;
+  background: transparent;
+  color: #c00;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.day-editor-actions .day-editor-delete:hover {
+  background: #fee;
+  border-color: #a00;
+}
+
+[data-theme="dark"] .day-editor-actions .day-editor-delete:hover {
+  background: #4a2020;
 }
 
 .day-editor-actions .btn-primary {

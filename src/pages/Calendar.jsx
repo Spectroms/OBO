@@ -12,7 +12,6 @@ import './Calendar.css'
 const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 const ACTIVITY_LEGEND = [
-  { name: 'Dépôt', color: '#223E7E' },
   { name: 'Foire', color: '#c1121f' },
   { name: 'Contenaire', color: '#2d6a4f' },
   { name: 'Déplacement', color: '#7b2cbf' },
@@ -21,7 +20,7 @@ const ACTIVITY_LEGEND = [
 
 export default function Calendar() {
   const { user, profile } = useAuth()
-  const { entries, loading, upsertEntry } = useEntries(user?.id)
+  const { entries, loading, upsertEntry, deleteEntry } = useEntries(user?.id)
   useReminder(entries, true)
   const today = useMemo(() => {
     const t = new Date()
@@ -177,6 +176,7 @@ export default function Calendar() {
           initialEntry={entries[editorDate]}
           onSave={upsertEntry}
           onClose={() => setEditorDate(null)}
+          onDelete={deleteEntry}
         />
       )}
     </div>

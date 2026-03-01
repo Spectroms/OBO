@@ -101,9 +101,17 @@
   color: var(--obo-primary);
 }
 
-.today-form .btn-save {
-  width: 100%;
+.today-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
   margin-top: 1rem;
+}
+
+.today-form .btn-save {
+  flex: 1;
+  min-width: 120px;
   padding: 0.65rem;
   background: var(--obo-primary);
   color: #fff;
@@ -115,6 +123,25 @@
 
 .today-form .btn-save:hover {
   opacity: 0.95;
+}
+
+.today-form .btn-reset-day {
+  padding: 0.5rem 1rem;
+  border: 1px solid #c00;
+  background: transparent;
+  color: #c00;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.today-form .btn-reset-day:hover {
+  background: #fee;
+  border-color: #a00;
+}
+
+[data-theme="dark"] .today-form .btn-reset-day:hover {
+  background: #4a2020;
 }
 
 .today-link {

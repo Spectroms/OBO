@@ -2,6 +2,74 @@
 
 L’application est wrappée avec **Capacitor** pour produire un APK Android à partir du build web.
 
+---
+
+## Guide pas à pas (si les commandes te parlent peu)
+
+### C’est quoi « npm » et la ligne de commande ?
+
+- **npm** = outil qui vient avec Node.js. Il permet d’installer des librairies et de lancer des scripts du projet (comme « construire le site » ou « synchroniser avec Android »).
+- **Ligne de commande** = la fenêtre où tu tapes du texte (sans interface avec des boutons). Sous Windows c’est **PowerShell**, **CMD** ou le terminal intégré de Cursor/VS Code (onglet **Terminal** en bas).
+
+### Où taper les commandes ?
+
+1. Ouvre **Cursor** (ou VS Code) sur ton projet OBO.
+2. En bas de la fenêtre, clique sur l’onglet **Terminal** (ou menu **Terminal → Nouveau terminal**).
+3. Vérifie que tu es dans le bon dossier : le chemin doit se terminer par `OBO` ou `obo`. Si ce n’est pas le cas, tape :
+   ```bash
+   cd C:\Users\FlowUP\Desktop\OBO
+   ```
+   puis Entrée.
+
+Tu peux aussi ouvrir **PowerShell** (menu Démarrer → taper « PowerShell »), puis taper :
+```bash
+cd C:\Users\FlowUP\Desktop\OBO
+```
+(adapter le chemin si ton projet n’est pas sur le Bureau).
+
+### Étapes pour générer l’APK (dans l’ordre)
+
+**Étape 1 – Mettre à jour le code web dans le projet Android**
+
+Dans le terminal (dans le dossier OBO), tape :
+
+```bash
+npm run build:android
+```
+
+Appuie sur **Entrée**. Cela fait deux choses :
+- construit le site (HTML/JS/CSS) à partir de ton code React ;
+- copie le résultat dans le dossier `android` pour que l’app Android affiche cette version.
+
+Attends que la commande se termine (pas d’erreur en rouge). Si tu vois des avertissements en jaune, ce n’est en général pas bloquant.
+
+**Étape 2 – Ouvrir le projet dans Android Studio**
+
+- Soit tu tapes dans le même terminal :
+  ```bash
+  npm run open:android
+  ```
+  (Android Studio s’ouvre sur le projet si tout est bien installé.)
+- Soit tu ouvres **Android Studio** à la main, puis **Fichier → Ouvrir** et tu choisis le dossier **`android`** qui est **dans** ton projet OBO (donc `C:\Users\FlowUP\Desktop\OBO\android`).
+
+**Étape 3 – Construire l’APK dans Android Studio**
+
+1. Attends que Android Studio ait fini d’indexer le projet (barre de progression en bas).
+2. Dans le menu : **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
+3. Quand c’est terminé, une petite notification apparaît en bas à droite. Clique sur **Locate** pour ouvrir le dossier où se trouve l’APK.
+4. L’APK s’appelle en général **`app-debug.apk`**. Tu peux le copier sur ton téléphone et l’installer (autoriser « Sources inconnues » si Android le demande).
+
+### En résumé
+
+| Où ? | Quoi faire ? |
+|------|----------------|
+| Terminal (dossier OBO) | `npm run build:android` → met à jour le code web dans Android |
+| Android Studio (projet `android`) | **Build → Build APK(s)** → génère le fichier `.apk` |
+
+Chaque fois que tu modifies le code de l’app (React, paramètres, etc.), refais au moins **Étape 1** puis **Étape 3** pour que l’APK contienne tes derniers changements.
+
+---
+
 ## Prérequis
 
 - **Node.js** 18+ et **npm**

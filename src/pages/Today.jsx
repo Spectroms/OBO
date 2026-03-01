@@ -19,7 +19,7 @@ function todayStr() {
 
 export default function Today() {
   const { user } = useAuth()
-  const { entries, loading, upsertEntry } = useEntries(user?.id)
+  const { entries, loading, upsertEntry, deleteEntry } = useEntries(user?.id)
   const dateStr = todayStr()
   const d = new Date(dateStr + 'T12:00:00')
   const dayName = DAY_NAMES[d.getDay()]
@@ -121,9 +121,20 @@ export default function Today() {
           Note / lieu
           <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. VILLENEUVE, AVIGNON" />
         </label>
-        <button type="submit" className="btn-primary btn-save">
-          {saved ? 'Enregistré' : 'Enregistrer'}
-        </button>
+        <div className="today-actions">
+          <button type="submit" className="btn-primary btn-save">
+            {saved ? 'Enregistré' : 'Enregistrer'}
+          </button>
+          {initialEntry && (
+            <button
+              type="button"
+              className="btn-reset-day"
+              onClick={() => deleteEntry(dateStr)}
+            >
+              Réinitialiser
+            </button>
+          )}
+        </div>
       </form>
 
       <p className="today-link">
