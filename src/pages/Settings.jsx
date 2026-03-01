@@ -6,7 +6,7 @@ import { useTheme } from '../hooks/useTheme'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 import { SUMMER_HOURS_KEY } from '../lib/utils'
 import { REMINDER_ENABLED_KEY } from '../hooks/useReminder'
-import { sendTestNotification } from '../lib/notifications'
+import { requestNotificationPermission } from '../lib/notifications'
 import './Settings.css'
 
 const REMINDER_KEY = 'obo_reminder_time'
@@ -36,7 +36,6 @@ export default function Settings() {
   const [importResult, setImportResult] = useState(null)
   const [adminProfiles, setAdminProfiles] = useState([])
   const [importForUserId, setImportForUserId] = useState(null)
-  const [testNotificationMsg, setTestNotificationMsg] = useState(null)
 
   useEffect(() => {
     const name = profile?.display_name || ''
@@ -79,6 +78,10 @@ export default function Settings() {
     const stored = localStorage.getItem(REMINDER_KEY)
     if (stored) setReminderTime(stored)
   }, [])
+
+  useEffect(() => {
+    if (reminderEnabled) requestNotificationPermission()
+  }, [reminderEnabled])
   useEffect(() => {
     setSummerHours(localStorage.getItem(SUMMER_HOURS_KEY) === '1')
   }, [])
@@ -97,6 +100,7 @@ export default function Settings() {
   function handleReminderEnabledChange(checked) {
     setReminderEnabled(checked)
     localStorage.setItem(REMINDER_ENABLED_KEY, checked ? '1' : '0')
+    if (checked) requestNotificationPermission()
   }
 
   async function handleSaveProfile(e) {
@@ -299,28 +303,6 @@ export default function Settings() {
           Heure du rappel
           <input type="time" value={reminderTime} onChange={handleReminderChange} disabled={!reminderEnabled} />
         </label>
-        <button
-          type="button"
-          className="btn-secondary"
-          style={{ marginTop: '0.25rem' }}
-          onClick={async () => {
-            setTestNotificationMsg(null)
-            const result = await sendTestNotification()
-            if (result.ok) {
-              setTestNotificationMsg('Notification envoyée.')
-            } else {
-              setTestNotificationMsg(result.message || 'Échec du test.')
-            }
-            if (result.ok) setTimeout(() => setTestNotificationMsg(null), 4000)
-          }}
-        >
-          Tester la notification
-        </button>
-        {testNotificationMsg && (
-          <p className="settings-hint" style={{ marginTop: '0.5rem', color: testNotificationMsg.includes('envoyée') ? 'var(--obo-primary)' : '#c00' }}>
-            {testNotificationMsg}
-          </p>
-        )}
       </section>
 
       {canViewTeam && (

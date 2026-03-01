@@ -148,3 +148,17 @@ L’APK se trouve dans :
 - **ID d’application** (package) : `app.obo.horaires`  
 
 Si vous changez le logo dans `public/logo.png`, recopiez-le dans `android/app/src/main/res/drawable/ic_launcher_logo.png` avant de refaire le build APK. Pour changer le nom ou l’ID, modifier `capacitor.config.json` puis exécuter `npm run build:android` et refaire un build dans Android Studio / Gradle.
+
+### Icône des notifications (logo OBO)
+
+Pour que les notifications affichent le **logo OBO** (au lieu du cercle bleu), Android exige une version **blanche sur fond transparent** du même logo.
+
+1. À partir de ton logo OBO (même forme, même dessin), crée une image **uniquement blanche (#FFFFFF) sur fond transparent** (PNG).
+2. Taille conseillée : **48×48 px** ou **96×96 px**.
+3. **Supprime** le fichier :  
+   `android/app/src/main/res/drawable/ic_stat_obo.xml`
+4. Enregistre ta version blanche du logo sous le nom **`ic_stat_obo.png`** et place-le dans :  
+   **`android/app/src/main/res/drawable/ic_stat_obo.png`**
+5. Lance `npm run build:android` puis **Build → Build APK(s)** dans Android Studio.
+
+Android teintera l’icône en bleu ; tu verras donc ton logo OBO à la place du cercle dans les notifications.
