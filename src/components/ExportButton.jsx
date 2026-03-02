@@ -1,10 +1,23 @@
 import { useState } from 'react'
 import { jsPDF } from 'jspdf'
 import * as XLSX from 'xlsx'
+import { Capacitor } from '@capacitor/core'
+import { Directory, Filesystem } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
 import { getMonthRecap, formatDuration, formatDurationDecimal, MONTH_NAMES } from '../lib/utils'
+import { getDayTypeLabel } from '../lib/constants'
 import { getJoursFeries } from '../lib/joursFeries'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 import './ExportButton.css'
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(r.result.split(',')[1])
+    r.onerror = reject
+    r.readAsDataURL(blob)
+  })
+}
 
 export default function ExportButton({ entries, year, month, displayName }) {
   const [format, setFormat] = useState('pdf')
@@ -30,14 +43,13 @@ export default function ExportButton({ entries, year, month, displayName }) {
       const ent = entries[dateStr]
       if (!ent) continue
       const duration = useDecimal ? formatDurationDecimal(ent.total_minutes || 0) : formatDuration(ent.total_minutes || 0)
-      const type = ent.day_type === 'cp' ? 'CP' : ent.day_type === 'recup' ? 'Récup' : ent.day_type === 'ferie' ? (ent.slots?.length ? 'Férié travaillé' : 'Férié chômé') : 'Normal'
+      const type = getDayTypeLabel(ent.day_type, ent)
       result.push({ date: `${d} ${monthName}`, type, créneaux: (ent.slots || []).map((s) => `${s.start}-${s.end}`).join(' '), durée: duration, activité: ent.activity || '', note: ent.note || '' })
     }
     return result
   }
 
-  function exportPDF() {
-    setLoading(true)
+  function buildPdfDoc() {
     const doc = new jsPDF()
     const rows = getEntriesForMonth()
     const employeeName = (displayName && displayName.trim()) ? displayName.trim() : '—'
@@ -68,6 +80,12 @@ export default function ExportButton({ entries, year, month, displayName }) {
     if (recap.cpCount) doc.text(`${recap.cpCount} CP`, 14, y), (y += 5)
     if (recap.recupCount) doc.text(`${recap.recupCount} récup`, 14, y), (y += 5)
     if (recap.dimancheCount) doc.text(`${recap.dimancheCount} dimanche(s) travaillé(s)`, 14, y)
+    return doc
+  }
+
+  function exportPDF() {
+    setLoading(true)
+    const doc = buildPdfDoc()
     const filename = safeFilename('pdf')
     const blob = doc.output('blob')
     const url = URL.createObjectURL(blob)
@@ -82,8 +100,7 @@ export default function ExportButton({ entries, year, month, displayName }) {
     setLoading(false)
   }
 
-  function exportExcel() {
-    setLoading(true)
+  function buildExcelWb() {
     const rows = getEntriesForMonth()
     const employeeName = (displayName && displayName.trim()) ? displayName.trim() : '—'
     const headerRows = [
@@ -108,11 +125,58 @@ export default function ExportButton({ entries, year, month, displayName }) {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Horaires')
     XLSX.utils.book_append_sheet(wb, recapSheet, 'Récap')
-    XLSX.writeFile(wb, safeFilename('xlsx'))
+    return wb
+  }
+
+  function exportExcel() {
+    setLoading(true)
+    XLSX.writeFile(buildExcelWb(), safeFilename('xlsx'))
     setLoading(false)
   }
 
   async function handleExport() {
+    const isNative = Capacitor.isNativePlatform()
+
+    if (isNative) {
+      setLoading(true)
+      try {
+        const filename = format === 'pdf' ? safeFilename('pdf') : safeFilename('xlsx')
+        let uri
+        if (format === 'pdf') {
+          const doc = buildPdfDoc()
+          const blob = doc.output('blob')
+          const base64 = await blobToBase64(blob)
+          await Filesystem.writeFile({
+            path: filename,
+            data: base64,
+            directory: Directory.Cache,
+          })
+          const result = await Filesystem.getUri({ directory: Directory.Cache, path: filename })
+          uri = result.uri
+        } else {
+          const wb = buildExcelWb()
+          const base64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' })
+          await Filesystem.writeFile({
+            path: filename,
+            data: base64,
+            directory: Directory.Cache,
+          })
+          const result = await Filesystem.getUri({ directory: Directory.Cache, path: filename })
+          uri = result.uri
+        }
+        await Share.share({
+          title: filename,
+          url: uri,
+          dialogTitle: "Enregistrer ou partager l'export",
+        })
+      } catch (err) {
+        console.error('Export (native):', err)
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
     if (format === 'excel') {
       exportExcel()
       return
@@ -127,6 +191,7 @@ export default function ExportButton({ entries, year, month, displayName }) {
         if (session?.access_token) {
           const url = `${origin}/api/export-pdf?year=${year}&month=${month}&token=${encodeURIComponent(session.access_token)}`
           window.location.href = url
+          setTimeout(() => setLoading(false), 3000)
           return
         }
       } catch (_) {}

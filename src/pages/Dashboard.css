@@ -49,6 +49,12 @@
   font-size: 1.1rem;
 }
 
+.dashboard-entries-loading {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--obo-text-muted);
+}
+
 .dashboard-summary p {
   margin: 0 0 1rem;
 }

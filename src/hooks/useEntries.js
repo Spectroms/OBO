@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
+import { VALID_DAY_TYPES } from '../lib/constants'
 
 const STORAGE_KEY = 'obo_entries'
 
@@ -46,7 +47,7 @@ function buildRow(dateStr, entry) {
     end: typeof s?.end === 'string' ? s.end : '17:00',
   }))
   const total_minutes = Math.round(Number(entry?.total_minutes)) || 0
-  const day_type = ['normal', 'ferie', 'cp', 'recup'].includes(entry?.day_type) ? entry.day_type : 'normal'
+  const day_type = VALID_DAY_TYPES.includes(entry?.day_type) ? entry.day_type : 'normal'
   return {
     date: dateStr,
     day_type,
@@ -132,7 +133,9 @@ export function useEntries(userId) {
               if (localNewer) {
                 try {
                   await upsertToSupabase(userId, date, entry)
-                } catch (_) {}
+                } catch (err) {
+                  console.warn('[OBO] Sync entrée', date, err?.message || err)
+                }
                 if (Object.keys(merged).length > 100) await new Promise((r) => setTimeout(r, 30))
               }
             }
@@ -152,7 +155,9 @@ export function useEntries(userId) {
       for (const [date, entry] of Object.entries(current)) {
         try {
           await upsertToSupabase(userId, date, entry)
-        } catch (_) {}
+        } catch (err) {
+          console.warn('[OBO] Sync en ligne', date, err?.message || err)
+        }
         if (Object.keys(current).length > 50) await new Promise((r) => setTimeout(r, 30))
       }
     }
@@ -161,7 +166,10 @@ export function useEntries(userId) {
   }, [userId])
 
   const upsertEntry = useCallback(async (date, entry) => {
-    const dateStr = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : date
+    let dateStr = null
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) dateStr = date
+    else if (date instanceof Date && !isNaN(date)) dateStr = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0')
+    if (!dateStr) return
     const row = buildRow(dateStr, { ...entry, updated_at: new Date().toISOString() })
     persist((prev) => ({ ...prev, [dateStr]: { ...row, user_id: userId } }))
     if (!navigator.onLine) return

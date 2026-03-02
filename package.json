@@ -9,12 +9,16 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:android": "vite build && npx cap sync android",
-    "open:android": "npx cap open android"
+    "open:android": "npx cap open android",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@capacitor/android": "^6.0.0",
     "@capacitor/core": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.4",
     "@capacitor/local-notifications": "^6.1.3",
+    "@capacitor/share": "^6.0.4",
     "@supabase/supabase-js": "^2.45.0",
     "jspdf": "^2.5.1",
     "react": "^18.2.0",
@@ -27,6 +31,7 @@
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.1.3"
+    "vite": "^5.1.3",
+    "vitest": "^2.1.9"
   }
 }

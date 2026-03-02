@@ -6,6 +6,7 @@ import ExportButton from '../components/ExportButton'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 import { getJoursFeries } from '../lib/joursFeries'
 import { getMonthRecap, formatDuration, formatDateStrFromDate } from '../lib/utils'
+import { getDayTypeLabel, getDayTypeClass } from '../lib/constants'
 import DayEditor from '../components/DayEditor'
 import './Calendar.css'
 
@@ -137,9 +138,9 @@ export default function Calendar() {
                   const isDimanche = d.getDay() === 0
                   const isToday = dateStr === today
                   const hasEntry = !!ent
-                  const dayTypeClass = !ent ? '' : ent.day_type === 'cp' ? 'day-cp' : ent.day_type === 'recup' ? 'day-recup' : ent.day_type === 'ferie' && !ent?.slots?.length ? 'day-ferie' : ent.day_type === 'ferie' && ent?.slots?.length ? 'day-ferie-worked' : 'day-normal'
+                  const dayTypeClass = getDayTypeClass(ent)
                   const activityClass = ent?.activity && ent.activity.trim() ? `activity-${ent.activity.trim().toLowerCase().replace(/\s/g, '-').replace(/é/g, 'e').replace(/è/g, 'e')}` : ''
-                  const label = ent?.day_type === 'cp' ? 'CP' : ent?.day_type === 'recup' ? 'Récup' : ent?.day_type === 'ferie' && !ent?.slots?.length ? 'Férié chômé' : ent?.total_minutes ? formatDuration(ent.total_minutes) : ''
+                  const label = ent ? (ent.day_type === 'cp' || ent.day_type === 'recup' || (ent.day_type === 'ferie' && !ent?.slots?.length) ? getDayTypeLabel(ent.day_type, ent) : ent.total_minutes ? formatDuration(ent.total_minutes) : '') : ''
                   return (
                     <td key={di} className={`cell ${isToday ? 'today' : ''} ${hasEntry ? 'has-entry' : ''} ${isDimanche ? 'dimanche' : ''} ${isFerie ? 'ferie' : ''} ${dayTypeClass} ${activityClass}`}>
                       <button type="button" className="cell-inner" onClick={() => openEditor(dateStr)}>

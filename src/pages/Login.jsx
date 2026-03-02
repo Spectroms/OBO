@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 import './Login.css'
@@ -15,6 +15,13 @@ export default function Login() {
   const successMessage = location.state?.message
   const authUsersUrl = location.state?.authUsersUrl
   const deleteDataOnly = location.state?.deleteDataOnly
+  const errorRef = useRef(null)
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.focus({ preventScroll: true })
+    }
+  }, [error])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -33,7 +40,11 @@ export default function Login() {
           setLoading(false)
           return
         }
-        const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
+        const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/` : ''
+        const { data, error: signUpError } = await supabase.auth.signUp(
+          { email, password },
+          redirectUrl ? { emailRedirectTo: redirectUrl } : undefined
+        )
         if (signUpError) throw signUpError
         if (data?.user) {
           if (data.session) await supabase.auth.setSession(data.session)
@@ -78,7 +89,11 @@ export default function Login() {
               )}
             </div>
           )}
-          {error && <div className="login-error">{error}</div>}
+          {error && (
+            <div id="login-error" className="login-error" role="alert" ref={errorRef} tabIndex={-1}>
+              {error}
+            </div>
+          )}
           <label>
             Email
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />

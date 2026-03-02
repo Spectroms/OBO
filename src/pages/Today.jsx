@@ -1,16 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useEntries } from '../hooks/useEntries'
 import { slotsToMinutes, formatDuration, DAY_NAMES, MONTH_NAMES, ACTIVITIES, getDefaultSlots, getDefaultSlotForAdd } from '../lib/utils'
+import { DAY_TYPES } from '../lib/constants'
 import { getJoursFeries } from '../lib/joursFeries'
 import './Today.css'
-
-const DAY_TYPES = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'cp', label: 'CP' },
-  { value: 'recup', label: 'Récup' },
-]
 
 function todayStr() {
   const d = new Date()
@@ -26,19 +21,23 @@ export default function Today() {
   const monthName = MONTH_NAMES[d.getMonth()]
   const dateLabel = `${dayName.charAt(0).toUpperCase() + dayName.slice(1)} ${d.getDate()} ${monthName ? monthName.charAt(0).toUpperCase() + monthName.slice(1) : ''} ${d.getFullYear()}`
   const initialEntry = entries[dateStr]
+  const initialKey = useMemo(() => (
+    dateStr + (initialEntry?.updated_at ?? '') + JSON.stringify(initialEntry?.slots ?? [])
+  ), [dateStr, initialEntry?.updated_at, initialEntry?.slots])
 
   const [dayType, setDayType] = useState(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
   const [slots, setSlots] = useState(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
   const [activity, setActivity] = useState(initialEntry?.activity || 'Dépôt')
   const [note, setNote] = useState(initialEntry?.note || '')
   const [saved, setSaved] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
 
   useEffect(() => {
     setDayType(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
     setSlots(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
     setActivity(initialEntry?.activity || 'Dépôt')
     setNote(initialEntry?.note || '')
-  }, [initialEntry])
+  }, [initialKey])
 
   const totalMinutes = dayType === 'normal' ? slotsToMinutes(slots) : 0
   const showSlots = dayType === 'normal'
@@ -71,7 +70,8 @@ export default function Today() {
     }
     await upsertEntry(dateStr, payload)
     setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setSaveMessage(navigator.onLine ? 'Enregistré. Données synchronisées.' : 'Enregistré. Sera synchronisé quand vous serez en ligne.')
+    setTimeout(() => { setSaved(false); setSaveMessage('') }, 3000)
   }
 
   if (loading) return <div className="today-loading">Chargement…</div>
@@ -121,6 +121,7 @@ export default function Today() {
           Note / lieu
           <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. VILLENEUVE, AVIGNON" />
         </label>
+        {saveMessage && <p className="today-save-message" role="status" aria-live="polite">{saveMessage}</p>}
         <div className="today-actions">
           <button type="submit" className="btn-primary btn-save">
             {saved ? 'Enregistré' : 'Enregistrer'}

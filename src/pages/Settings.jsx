@@ -5,6 +5,7 @@ import { useEntries } from '../hooks/useEntries'
 import { useTheme } from '../hooks/useTheme'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 import { SUMMER_HOURS_KEY } from '../lib/utils'
+import { VALID_DAY_TYPES } from '../lib/constants'
 import { REMINDER_ENABLED_KEY } from '../hooks/useReminder'
 import { requestNotificationPermission } from '../lib/notifications'
 import './Settings.css'
@@ -339,7 +340,7 @@ export default function Settings() {
                 return {
                   user_id: targetUserId,
                   date: dateStr,
-                  day_type: ['normal', 'ferie', 'cp', 'recup'].includes(entry?.day_type) ? entry.day_type : 'normal',
+                  day_type: VALID_DAY_TYPES.includes(entry?.day_type) ? entry.day_type : 'normal',
                   slots,
                   activity: entry?.activity != null && entry.activity !== '' ? String(entry.activity) : null,
                   note: entry?.note != null && entry.note !== '' ? String(entry.note) : null,

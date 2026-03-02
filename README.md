@@ -34,6 +34,13 @@ Pour donner à un utilisateur l’accès au tableau de bord (vue équipe), mettr
 npm run dev
 ```
 
+## Tests
+
+```bash
+npm run test        # mode watch
+npm run test:run    # une seule exécution
+```
+
 ## Build
 
 ```bash
@@ -43,7 +50,9 @@ npm run build
 ## Déploiement Vercel
 
 1. Connecter le dépôt Git à Vercel.
-2. Configurer les variables d’environnement : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+2. Configurer les variables d’environnement :
+   - **Frontend** : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+   - **API (export PDF)** : en production, définir `SUPABASE_URL` et `SUPABASE_ANON_KEY` (sans préfixe `VITE_`) pour que l’API serveur n’utilise pas les clés exposées au client.
 3. Déployer (build automatique avec `vercel.json`).
 
 ## Logo

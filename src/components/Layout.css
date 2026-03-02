@@ -4,6 +4,14 @@
   flex-direction: column;
 }
 
+.layout-offline-banner {
+  background: var(--obo-warning-bg, #fef3c7);
+  color: var(--obo-warning-text, #92400e);
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
 .layout-header {
   background: var(--obo-card-bg);
   border-bottom: 1px solid var(--obo-border);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 import { formatDuration } from '../lib/utils'
+import { getDayTypeLabel } from '../lib/constants'
 import ExportButton from '../components/ExportButton'
 import './Dashboard.css'
 
@@ -8,6 +9,7 @@ export default function Dashboard() {
   const [profiles, setProfiles] = useState([])
   const [entriesByUser, setEntriesByUser] = useState({})
   const [loading, setLoading] = useState(true)
+  const [entriesLoading, setEntriesLoading] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date()
@@ -27,7 +29,11 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    if (!hasSupabase() || !selectedUserId || !selectedMonth) return
+    if (!hasSupabase() || !selectedUserId || !selectedMonth) {
+      setEntriesLoading(false)
+      return
+    }
+    setEntriesLoading(true)
     const [y, m] = selectedMonth.split('-').map(Number)
     const start = `${selectedMonth}-01`
     const lastDay = new Date(y, m, 0).getDate()
@@ -44,6 +50,7 @@ export default function Dashboard() {
         ;(data || []).forEach((row) => { byDate[row.date] = row })
         setEntriesByUser((prev) => ({ ...prev, [selectedUserId]: byDate }))
       })
+      .finally(() => setEntriesLoading(false))
   }, [selectedUserId, selectedMonth])
 
   const entries = selectedUserId ? (entriesByUser[selectedUserId] || {}) : {}
@@ -78,6 +85,7 @@ export default function Dashboard() {
           <h2>{profile?.display_name || profile?.email}</h2>
           <ExportButton entries={entries} year={y} month={m} displayName={profile?.display_name || profile?.email} />
           <p><strong>Total du mois :</strong> {formatDuration(totalMinutes)}</p>
+          {entriesLoading && <p className="dashboard-entries-loading">Chargement des horaires…</p>}
           <table className="dashboard-table">
             <thead>
               <tr>
@@ -93,7 +101,7 @@ export default function Dashboard() {
                 .map(([date, ent]) => (
                   <tr key={date}>
                     <td>{date}</td>
-                    <td>{ent.day_type === 'cp' ? 'CP' : ent.day_type === 'recup' ? 'Récup' : ent.day_type === 'ferie' ? (ent.slots?.length ? 'Férié travaillé' : 'Férié chômé') : 'Normal'}</td>
+                    <td>{getDayTypeLabel(ent.day_type, ent)}</td>
                     <td>{ent.total_minutes ? formatDuration(ent.total_minutes) : '—'}</td>
                     <td>{(ent.activity || ent.note) ? [ent.activity, ent.note].filter(Boolean).join(' — ') : '—'}</td>
                   </tr>

@@ -101,6 +101,12 @@
   color: var(--obo-primary);
 }
 
+.today-save-message {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: var(--obo-primary);
+}
+
 .today-actions {
   display: flex;
   flex-wrap: wrap;

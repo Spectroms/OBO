@@ -1,28 +1,29 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { slotsToMinutes, formatDuration, DAY_NAMES, ACTIVITIES, getDefaultSlots, getDefaultSlotForAdd } from '../lib/utils'
+import { DAY_TYPES } from '../lib/constants'
 import { getJoursFeries } from '../lib/joursFeries'
 import './DayEditor.css'
-
-const DAY_TYPES = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'cp', label: 'CP' },
-  { value: 'recup', label: 'Récup' },
-]
 
 export default function DayEditor({ dateStr, initialEntry, onSave, onClose, onDelete }) {
   const d = dateStr ? new Date(dateStr + 'T12:00:00') : new Date()
   const dayName = DAY_NAMES[d.getDay()]
+  const initialKey = useMemo(() => (
+    dateStr + (initialEntry?.updated_at ?? '') + JSON.stringify(initialEntry?.slots ?? [])
+  ), [dateStr, initialEntry?.updated_at, initialEntry?.slots])
+
   const [dayType, setDayType] = useState(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
   const [slots, setSlots] = useState(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
   const [activity, setActivity] = useState(initialEntry?.activity || 'Dépôt')
   const [note, setNote] = useState(initialEntry?.note || '')
+  const [saveError, setSaveError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     setDayType(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
     setSlots(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
     setActivity(initialEntry?.activity || 'Dépôt')
     setNote(initialEntry?.note || '')
-  }, [dateStr, initialEntry])
+  }, [initialKey])
 
   const totalMinutes = dayType === 'normal' ? slotsToMinutes(slots) : 0
 
@@ -38,8 +39,10 @@ export default function DayEditor({ dateStr, initialEntry, onSave, onClose, onDe
     setSlots((s) => s.map((slot, idx) => (idx === i ? { ...slot, [field]: value } : slot)))
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
+    setSaveError('')
+    setSaving(true)
     let savedDayType = dayType
     const hasSlots = dayType === 'normal' && slots.length > 0
     if (hasSlots && dateStr) {
@@ -53,8 +56,15 @@ export default function DayEditor({ dateStr, initialEntry, onSave, onClose, onDe
       note: note || null,
       total_minutes: totalMinutes,
     }
-    onSave(dateStr, payload)
-    onClose()
+    try {
+      const saveResult = onSave(dateStr, payload)
+      if (saveResult && typeof saveResult.then === 'function') await saveResult
+      onClose()
+    } catch (err) {
+      setSaveError(err?.message || 'Erreur lors de l’enregistrement.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const showSlots = dayType === 'normal'
@@ -105,6 +115,7 @@ export default function DayEditor({ dateStr, initialEntry, onSave, onClose, onDe
             Note / lieu
             <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. VILLENEUVE, AVIGNON" />
           </label>
+          {saveError && <p className="day-editor-error" role="alert">{saveError}</p>}
           <div className="day-editor-actions">
             {initialEntry && onDelete && (
               <button
@@ -115,8 +126,8 @@ export default function DayEditor({ dateStr, initialEntry, onSave, onClose, onDe
                 Réinitialiser
               </button>
             )}
-            <button type="button" onClick={onClose}>Annuler</button>
-            <button type="submit" className="btn-primary">Enregistrer</button>
+            <button type="button" onClick={onClose} disabled={saving}>Annuler</button>
+            <button type="submit" className="btn-primary" disabled={saving}>{saving ? '…' : 'Enregistrer'}</button>
           </div>
         </form>
       </div>

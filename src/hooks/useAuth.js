@@ -29,6 +29,11 @@ export function useAuth() {
 
   async function fetchProfile(userId, userEmail) {
     if (!hasSupabase()) return null
+    if (!userId) {
+      setProfile(null)
+      setLoading(false)
+      return null
+    }
     let { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
     if (!data) {
       await supabase.from('profiles').upsert(
