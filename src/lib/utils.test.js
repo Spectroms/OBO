@@ -25,7 +25,11 @@ describe('slotsToMinutes', () => {
   })
 
   it('ignore les créneaux avec end <= start', () => {
-    expect(slotsToMinutes([{ start: '12:00', end: '08:00' }])).toBe(0)
+    expect(slotsToMinutes([{ start: '12:00', end: '08:00' }])).toBe(20 * 60)
+  })
+
+  it('calcule un créneau de nuit (tour du cadran)', () => {
+    expect(slotsToMinutes([{ start: '21:00', end: '03:00' }])).toBe(6 * 60)
   })
 })
 
@@ -55,14 +59,16 @@ describe('getMonthRecap', () => {
   it('calcule le total et les compteurs pour un mois', () => {
     const joursFeries = getJoursFeries(2024)
     const entries = {
-      '2024-01-02': { day_type: 'normal', total_minutes: 480, slots: [{ start: '08:00', end: '17:00' }] },
+      '2024-01-02': { day_type: 'normal', total_minutes: 480, slots: [{ start: '08:00', end: '17:00' }], decouche: true, decouche_zone: 'france' },
       '2024-01-03': { day_type: 'cp' },
-      '2024-01-04': { day_type: 'recup' },
+      '2024-01-04': { day_type: 'recup', decouche: true, decouche_zone: 'etranger' },
     }
     const recap = getMonthRecap(entries, 2024, 1, joursFeries)
     expect(recap.totalMinutes).toBe(480)
     expect(recap.cpCount).toBe(1)
     expect(recap.recupCount).toBe(1)
+    expect(recap.decoucheFranceCount).toBe(1)
+    expect(recap.decoucheEtrangerCount).toBe(1)
   })
 
   it('compte les dimanches travaillés', () => {

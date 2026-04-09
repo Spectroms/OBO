@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 import { VALID_DAY_TYPES } from '../lib/constants'
+import { slotsToMinutes, normalizeActivityLabel } from '../lib/utils'
 
 const STORAGE_KEY = 'obo_entries'
 
@@ -48,13 +49,18 @@ function buildRow(dateStr, entry) {
   }))
   const total_minutes = Math.round(Number(entry?.total_minutes)) || 0
   const day_type = VALID_DAY_TYPES.includes(entry?.day_type) ? entry.day_type : 'normal'
+  const isInfoOnlyDay = day_type === 'cp' || day_type === 'recup'
+  const decouche = !!entry?.decouche
+  const decouche_zone = decouche && ['france', 'etranger'].includes(entry?.decouche_zone) ? entry.decouche_zone : null
   return {
     date: dateStr,
     day_type,
-    slots,
-    activity: entry?.activity != null && entry.activity !== '' ? String(entry.activity) : null,
-    note: entry?.note != null && entry.note !== '' ? String(entry.note) : null,
-    total_minutes,
+    slots: isInfoOnlyDay ? [] : slots,
+    activity: isInfoOnlyDay ? null : (normalizeActivityLabel(entry?.activity) || null),
+    note: isInfoOnlyDay ? null : (entry?.note != null && entry.note !== '' ? String(entry.note) : null),
+    decouche: isInfoOnlyDay ? false : decouche,
+    decouche_zone: isInfoOnlyDay ? null : decouche_zone,
+    total_minutes: isInfoOnlyDay ? 0 : total_minutes,
     updated_at: entry?.updated_at || new Date().toISOString(),
   }
 }
@@ -71,6 +77,59 @@ async function upsertToSupabase(userId, dateStr, entry) {
     if (attempt < 2) await new Promise((r) => setTimeout(r, 800))
   }
   if (lastErr) throw lastErr
+}
+
+function addOneDay(dateStr) {
+  const d = new Date(`${dateStr}T12:00:00`)
+  d.setDate(d.getDate() + 1)
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+}
+
+function toMinutes(timeStr) {
+  if (typeof timeStr !== 'string') return NaN
+  const [h, m] = timeStr.split(':').map(Number)
+  if (isNaN(h) || isNaN(m)) return NaN
+  return h * 60 + m
+}
+
+function splitSlotsOverMidnight(slots) {
+  const currentDaySlots = []
+  const nextDaySlots = []
+  let hasCrossMidnight = false
+
+  for (const slot of (Array.isArray(slots) ? slots : [])) {
+    const start = typeof slot?.start === 'string' ? slot.start : '08:00'
+    const end = typeof slot?.end === 'string' ? slot.end : '17:00'
+    const startMins = toMinutes(start)
+    const endMins = toMinutes(end)
+
+    if (!isNaN(startMins) && !isNaN(endMins) && endMins < startMins) {
+      hasCrossMidnight = true
+      // Sur le jour saisi: de l'heure de départ à minuit.
+      currentDaySlots.push({ start, end: '00:00' })
+      // Sur le jour suivant: de minuit à l'heure de fin.
+      if (end !== '00:00') nextDaySlots.push({ start: '00:00', end })
+    } else {
+      currentDaySlots.push({ start, end })
+    }
+  }
+
+  return { hasCrossMidnight, currentDaySlots, nextDaySlots }
+}
+
+function mergeSlotsUnique(baseSlots, extraSlots) {
+  const out = []
+  const seen = new Set()
+  for (const slot of [...(baseSlots || []), ...(extraSlots || [])]) {
+    const start = typeof slot?.start === 'string' ? slot.start : null
+    const end = typeof slot?.end === 'string' ? slot.end : null
+    if (!start || !end) continue
+    const key = `${start}-${end}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ start, end })
+  }
+  return out
 }
 
 export function useEntries(userId) {
@@ -115,6 +174,8 @@ export function useEntries(userId) {
             slots: row.slots || [],
             activity: row.activity,
             note: row.note,
+            decouche: !!row.decouche,
+            decouche_zone: row.decouche_zone ?? null,
             total_minutes: row.total_minutes,
             updated_at: row.updated_at,
           }
@@ -170,10 +231,46 @@ export function useEntries(userId) {
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) dateStr = date
     else if (date instanceof Date && !isNaN(date)) dateStr = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0')
     if (!dateStr) return
-    const row = buildRow(dateStr, { ...entry, updated_at: new Date().toISOString() })
-    persist((prev) => ({ ...prev, [dateStr]: { ...row, user_id: userId } }))
+    const updatedAt = new Date().toISOString()
+    const row = buildRow(dateStr, { ...entry, updated_at: updatedAt })
+
+    const canSplit = row.day_type === 'normal' || row.day_type === 'ferie'
+    const { hasCrossMidnight, currentDaySlots, nextDaySlots } = canSplit
+      ? splitSlotsOverMidnight(row.slots)
+      : { hasCrossMidnight: false, currentDaySlots: row.slots, nextDaySlots: [] }
+
+    const currentRow = hasCrossMidnight
+      ? buildRow(dateStr, { ...row, slots: currentDaySlots, total_minutes: slotsToMinutes(currentDaySlots), updated_at: updatedAt })
+      : row
+
+    let nextDateStr = null
+    let nextRow = null
+    if (hasCrossMidnight && nextDaySlots.length) {
+      nextDateStr = addOneDay(dateStr)
+      const existingNext = entriesRef.current[nextDateStr]
+      const mergedSlots = mergeSlotsUnique(existingNext?.slots || [], nextDaySlots)
+      const nextDayType = existingNext?.day_type && VALID_DAY_TYPES.includes(existingNext.day_type) && existingNext.day_type !== 'cp' && existingNext.day_type !== 'recup'
+        ? existingNext.day_type
+        : 'normal'
+      nextRow = buildRow(nextDateStr, {
+        ...existingNext,
+        day_type: nextDayType,
+        slots: mergedSlots,
+        total_minutes: slotsToMinutes(mergedSlots),
+        updated_at: updatedAt,
+      })
+    }
+
+    persist((prev) => {
+      const next = { ...prev, [dateStr]: { ...currentRow, user_id: userId } }
+      if (nextDateStr && nextRow) next[nextDateStr] = { ...nextRow, user_id: userId }
+      return next
+    })
     if (!navigator.onLine) return
-    if (hasSupabase() && userId) await upsertToSupabase(userId, dateStr, { ...entry, ...row })
+    if (hasSupabase() && userId) {
+      await upsertToSupabase(userId, dateStr, { ...entry, ...currentRow })
+      if (nextDateStr && nextRow) await upsertToSupabase(userId, nextDateStr, nextRow)
+    }
   }, [userId, persist])
 
   const deleteEntry = useCallback(async (date) => {

@@ -102,6 +102,33 @@
   cursor: pointer;
 }
 
+.login-separator {
+  margin-top: 0.85rem;
+  text-align: center;
+  color: var(--obo-text-muted);
+  font-size: 0.85rem;
+}
+
+.login-form .btn-google {
+  width: 100%;
+  padding: 0.6rem;
+  margin-top: 0.5rem;
+  background: #fff;
+  color: #1f1f1f;
+  border: 1px solid var(--obo-border);
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.login-form .btn-google:hover:not(:disabled) {
+  background: #f8f8f8;
+}
+
+[data-theme="dark"] .login-form .btn-google {
+  background: #181818;
+  color: #fff;
+}
+
 .login-success {
   background: #e8f5e9;
   color: #2e7d32;

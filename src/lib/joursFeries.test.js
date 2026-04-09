@@ -29,4 +29,9 @@ describe('isJourFerie', () => {
   it('retourne false pour un jour non férié', () => {
     expect(isJourFerie('2024-06-15', 2024)).toBe(false)
   })
+
+  it('ne marque pas le dimanche de Pâques comme férié (ex: 2026-04-05)', () => {
+    expect(isJourFerie('2026-04-05', 2026)).toBe(false)
+    expect(isJourFerie('2026-04-06', 2026)).toBe(true)
+  })
 })

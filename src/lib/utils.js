@@ -24,7 +24,11 @@ export function slotsToMinutes(slots) {
   for (const s of slots) {
     const start = timeToMinutes(s.start)
     const end = timeToMinutes(s.end)
-    if (typeof start === 'number' && typeof end === 'number' && end > start) total += end - start
+    if (typeof start === 'number' && typeof end === 'number' && !isNaN(start) && !isNaN(end)) {
+      if (end > start) total += end - start
+      // Gère le "tour du cadran" (ex: 21:00 -> 03:00)
+      else if (end < start) total += (24 * 60 - start) + end
+    }
   }
   return total
 }
@@ -71,6 +75,8 @@ export function getMonthRecap(entries, year, month, joursFeriesSet) {
   let cpCount = 0
   let recupCount = 0
   let dimancheCount = 0
+  let decoucheFranceCount = 0
+  let decoucheEtrangerCount = 0
   const first = new Date(year, month - 1, 1)
   const last = new Date(year, month, 0)
   let ferieCount = 0
@@ -85,6 +91,10 @@ export function getMonthRecap(entries, year, month, joursFeriesSet) {
     const ent = entries[dateStr]
     const isDimanche = d.getDay() === 0
     if (ent) {
+      if (ent.decouche) {
+        if (ent.decouche_zone === 'etranger') decoucheEtrangerCount++
+        else decoucheFranceCount++
+      }
       if (ent.day_type === 'ferie') {
         if (ent.slots?.length) {
           ferieTravaillesCount++
@@ -98,7 +108,7 @@ export function getMonthRecap(entries, year, month, joursFeriesSet) {
       }
     }
   }
-  return { totalMinutes, ferieCount, ferieTravaillesCount, cpCount, recupCount, dimancheCount }
+  return { totalMinutes, ferieCount, ferieTravaillesCount, cpCount, recupCount, dimancheCount, decoucheFranceCount, decoucheEtrangerCount }
 }
 
 function formatWeekKey(d) {
@@ -115,6 +125,15 @@ export function formatDateStrFromDate(d) {
   return formatDateStr(d)
 }
 
+export function normalizeActivityLabel(activity) {
+  if (activity == null || activity === '') return ''
+  const value = String(activity).trim()
+  if (!value) return ''
+  // Compatibilité avec anciennes fautes/enregistrements.
+  if (value.toLowerCase() === 'contenaire' || value.toLowerCase() === 'containaire' || value.toLowerCase() === 'conteneur maritime' || value.toLowerCase() === 'conteneur') return 'Container'
+  return value
+}
+
 export const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
 export const MONTH_NAMES = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
-export const ACTIVITIES = ['', 'Dépôt', 'Foire', 'Contenaire', 'Déplacement', 'Déménagement']
+export const ACTIVITIES = ['', 'Dépôt', 'Foire', 'Container', 'Déplacement', 'Déménagement']

@@ -38,7 +38,8 @@ export function getJoursFeries(year) {
     set.add(formatDateKey(new Date(year, month - 1, day)))
   })
   const easter = getEasterSunday(year)
-  set.add(formatDateKey(easter)) // Pâques
+  // En France, le dimanche de Pâques n'est pas un jour férié legal additionnel.
+  // Les jours fériés mobiles retenus sont : lundi de Pâques, Ascension, lundi de Pentecôte.
   set.add(formatDateKey(new Date(easter.getTime() + 1 * 24 * 60 * 60 * 1000))) // Lundi de Pâques
   set.add(formatDateKey(new Date(easter.getTime() + 39 * 24 * 60 * 60 * 1000))) // Ascension
   set.add(formatDateKey(new Date(easter.getTime() + 50 * 24 * 60 * 60 * 1000))) // Lundi de Pentecôte

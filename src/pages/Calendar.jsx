@@ -5,7 +5,7 @@ import { useReminder } from '../hooks/useReminder'
 import ExportButton from '../components/ExportButton'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
 import { getJoursFeries } from '../lib/joursFeries'
-import { getMonthRecap, formatDuration, formatDateStrFromDate } from '../lib/utils'
+import { getMonthRecap, formatDuration, formatDateStrFromDate, normalizeActivityLabel } from '../lib/utils'
 import { getDayTypeLabel, getDayTypeClass } from '../lib/constants'
 import DayEditor from '../components/DayEditor'
 import './Calendar.css'
@@ -14,7 +14,7 @@ const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet'
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 const ACTIVITY_LEGEND = [
   { name: 'Foire', color: '#c1121f' },
-  { name: 'Contenaire', color: '#2d6a4f' },
+  { name: 'Container', color: '#2d6a4f' },
   { name: 'Déplacement', color: '#7b2cbf' },
   { name: 'Déménagement', color: '#e85d04' },
 ]
@@ -139,14 +139,15 @@ export default function Calendar() {
                   const isToday = dateStr === today
                   const hasEntry = !!ent
                   const dayTypeClass = getDayTypeClass(ent)
-                  const activityClass = ent?.activity && ent.activity.trim() ? `activity-${ent.activity.trim().toLowerCase().replace(/\s/g, '-').replace(/é/g, 'e').replace(/è/g, 'e')}` : ''
+                  const activityLabel = normalizeActivityLabel(ent?.activity)
+                  const activityClass = activityLabel ? `activity-${activityLabel.toLowerCase().replace(/\s/g, '-').replace(/é/g, 'e').replace(/è/g, 'e')}` : ''
                   const label = ent ? (ent.day_type === 'cp' || ent.day_type === 'recup' || (ent.day_type === 'ferie' && !ent?.slots?.length) ? getDayTypeLabel(ent.day_type, ent) : ent.total_minutes ? formatDuration(ent.total_minutes) : '') : ''
                   return (
                     <td key={di} className={`cell ${isToday ? 'today' : ''} ${hasEntry ? 'has-entry' : ''} ${isDimanche ? 'dimanche' : ''} ${isFerie ? 'ferie' : ''} ${dayTypeClass} ${activityClass}`}>
                       <button type="button" className="cell-inner" onClick={() => openEditor(dateStr)}>
                         <span className="cell-day">{d.getDate()}</span>
                         {label && <span className="cell-label">{label}</span>}
-                        {ent?.activity && ent.activity.trim() && <span className="cell-activity-bar" title={ent.activity} aria-hidden />}
+                        {activityLabel && <span className="cell-activity-bar" title={activityLabel} aria-hidden />}
                       </button>
                     </td>
                   )
@@ -164,8 +165,9 @@ export default function Calendar() {
           {recap.ferieCount - recap.ferieTravaillesCount > 0 && <li>{recap.ferieCount - recap.ferieTravaillesCount} jour(s) férié(s) chômé(s)</li>}
           {recap.ferieTravaillesCount > 0 && <li>{recap.ferieTravaillesCount} jour(s) férié(s) travaillé(s)</li>}
           {recap.cpCount > 0 && <li>{recap.cpCount} CP</li>}
-          {recap.recupCount > 0 && <li>{recap.recupCount} récup</li>}
           {recap.dimancheCount > 0 && <li>{recap.dimancheCount} dimanche(s) travaillé(s)</li>}
+          {recap.decoucheFranceCount > 0 && <li>{recap.decoucheFranceCount} découché(s) France</li>}
+          {recap.decoucheEtrangerCount > 0 && <li>{recap.decoucheEtrangerCount} découché(s) Étranger</li>}
         </ul>
       </section>
 

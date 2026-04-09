@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, hasSupabase } from '../lib/supabaseClient'
-import { formatDuration } from '../lib/utils'
+import { formatDuration, normalizeActivityLabel } from '../lib/utils'
 import { getDayTypeLabel } from '../lib/constants'
 import ExportButton from '../components/ExportButton'
 import './Dashboard.css'
@@ -55,6 +55,8 @@ export default function Dashboard() {
 
   const entries = selectedUserId ? (entriesByUser[selectedUserId] || {}) : {}
   const totalMinutes = Object.values(entries).reduce((sum, e) => sum + (e.total_minutes || 0), 0)
+  const decoucheFranceTotal = Object.values(entries).filter((e) => e?.decouche && e?.decouche_zone !== 'etranger').length
+  const decoucheEtrangerTotal = Object.values(entries).filter((e) => e?.decouche && e?.decouche_zone === 'etranger').length
   const profile = profiles.find((p) => p.id === selectedUserId)
 
   if (loading) return <div className="dashboard-loading">Chargement…</div>
@@ -85,6 +87,8 @@ export default function Dashboard() {
           <h2>{profile?.display_name || profile?.email}</h2>
           <ExportButton entries={entries} year={y} month={m} displayName={profile?.display_name || profile?.email} />
           <p><strong>Total du mois :</strong> {formatDuration(totalMinutes)}</p>
+          {decoucheFranceTotal > 0 && <p><strong>Découchés France :</strong> {decoucheFranceTotal}</p>}
+          {decoucheEtrangerTotal > 0 && <p><strong>Découchés Étranger :</strong> {decoucheEtrangerTotal}</p>}
           {entriesLoading && <p className="dashboard-entries-loading">Chargement des horaires…</p>}
           <table className="dashboard-table">
             <thead>
@@ -103,7 +107,15 @@ export default function Dashboard() {
                     <td>{date}</td>
                     <td>{getDayTypeLabel(ent.day_type, ent)}</td>
                     <td>{ent.total_minutes ? formatDuration(ent.total_minutes) : '—'}</td>
-                    <td>{(ent.activity || ent.note) ? [ent.activity, ent.note].filter(Boolean).join(' — ') : '—'}</td>
+                    <td>{
+                      (ent.activity || ent.note || ent.decouche)
+                        ? [
+                          normalizeActivityLabel(ent.activity),
+                          ent.note,
+                          ent.decouche ? `Découché (${ent?.decouche_zone === 'etranger' ? 'Étranger' : 'France'})` : '',
+                        ].filter(Boolean).join(' — ')
+                        : '—'
+                    }</td>
                   </tr>
                 ))}
             </tbody>

@@ -344,6 +344,8 @@ export default function Settings() {
                   slots,
                   activity: entry?.activity != null && entry.activity !== '' ? String(entry.activity) : null,
                   note: entry?.note != null && entry.note !== '' ? String(entry.note) : null,
+                  decouche: !!entry?.decouche,
+                  decouche_zone: entry?.decouche && ['france', 'etranger'].includes(entry?.decouche_zone) ? entry.decouche_zone : null,
                   total_minutes: Math.round(Number(entry?.total_minutes)) || 0,
                   updated_at: entry?.updated_at || new Date().toISOString(),
                 }

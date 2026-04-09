@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf'
 import { getJoursFeries } from '../src/lib/joursFeries.js'
 
 const MONTH_NAMES = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+const DAY_NAMES = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
 
 function formatDateStr(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
@@ -15,12 +16,22 @@ function formatDuration(minutes) {
   return m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`
 }
 
+function normalizeActivityLabel(activity) {
+  if (activity == null || activity === '') return ''
+  const value = String(activity).trim()
+  if (!value) return ''
+  if (value.toLowerCase() === 'contenaire' || value.toLowerCase() === 'containaire' || value.toLowerCase() === 'conteneur maritime' || value.toLowerCase() === 'conteneur') return 'Container'
+  return value
+}
+
 function getMonthRecap(entriesMap, year, month, joursFeriesSet) {
   let totalMinutes = 0
   let ferieTravaillesCount = 0
   let cpCount = 0
   let recupCount = 0
   let dimancheCount = 0
+  let decoucheFranceCount = 0
+  let decoucheEtrangerCount = 0
   let ferieCount = 0
   if (joursFeriesSet) {
     for (const key of joursFeriesSet) {
@@ -35,6 +46,10 @@ function getMonthRecap(entriesMap, year, month, joursFeriesSet) {
     const ent = entriesMap[dateStr]
     const isDimanche = d.getDay() === 0
     if (ent) {
+      if (ent.decouche) {
+        if (ent.decouche_zone === 'etranger') decoucheEtrangerCount++
+        else decoucheFranceCount++
+      }
       if (ent.day_type === 'ferie') {
         if (ent.slots?.length) {
           ferieTravaillesCount++
@@ -48,7 +63,7 @@ function getMonthRecap(entriesMap, year, month, joursFeriesSet) {
       }
     }
   }
-  return { totalMinutes, ferieCount, ferieTravaillesCount, cpCount, recupCount, dimancheCount }
+  return { totalMinutes, ferieCount, ferieTravaillesCount, cpCount, recupCount, dimancheCount, decoucheFranceCount, decoucheEtrangerCount }
 }
 
 export const config = {
@@ -92,7 +107,7 @@ export default async function handler(req, res) {
 
   const [{ data: profileRow }, { data: entriesRows }] = await Promise.all([
     supabase.from('profiles').select('display_name').eq('id', user.id).single(),
-    supabase.from('entries').select('date, day_type, slots, activity, note, total_minutes')
+    supabase.from('entries').select('date, day_type, slots, activity, note, decouche, decouche_zone, total_minutes')
       .eq('user_id', user.id)
       .gte('date', dateStart)
       .lte('date', dateEnd),
@@ -120,16 +135,25 @@ export default async function handler(req, res) {
   for (let d = 1; d <= lastDay; d++) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     const ent = entriesMap[dateStr]
-    if (!ent) continue
-    const duration = formatDuration(ent.total_minutes || 0)
-    const type = ent.day_type === 'cp' ? 'CP' : ent.day_type === 'recup' ? 'Récup' : ent.day_type === 'ferie' ? (ent.slots?.length ? 'Férié travaillé' : 'Férié chômé') : 'Normal'
+    const dayDate = new Date(year, month - 1, d)
+    const dayName = DAY_NAMES[dayDate.getDay()] || ''
+    const dayLabel = dayName ? dayName.charAt(0).toUpperCase() + dayName.slice(1) : ''
+    const isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6
+    const isFerie = joursFeriesSet.has(dateStr)
+    const duration = ent ? formatDuration(ent.total_minutes || 0) : ''
+    const type = ent
+      ? (ent.day_type === 'cp' ? 'CP' : ent.day_type === 'recup' ? 'Récup' : ent.day_type === 'ferie' ? (ent.slots?.length ? 'Férié travaillé' : 'Férié chômé') : 'Normal')
+      : (isFerie ? 'Férié chômé' : '')
+    const decoucheText = ent?.decouche ? `Découché (${ent?.decouche_zone === 'etranger' ? 'Étranger' : 'France'})` : ''
     rows.push({
-      date: `${d} ${monthName}`,
+      date: `${d} ${monthName} (${dayLabel})`,
       type,
-      créneaux: (ent.slots || []).map((s) => `${s.start}-${s.end}`).join(' '),
+      créneaux: (ent?.slots || []).map((s) => `${s.start}-${s.end}`).join(' '),
       durée: duration,
-      activité: ent.activity || '',
-      note: ent.note || '',
+      activité: normalizeActivityLabel(ent?.activity) || '',
+      note: [ent?.note || '', decoucheText].filter(Boolean).join(' — '),
+      isWeekend,
+      isFerie,
     })
   }
 
@@ -137,30 +161,64 @@ export default async function handler(req, res) {
   doc.setFontSize(11)
   doc.text(`Employé : ${displayName}`, 14, 15)
   doc.text(`Horaires ${periodLabel}`, 14, 22)
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const lineHeight = 5
+  const maxY = pageHeight - 15
   let y = 28
-  if (rows.length) {
+
+  function drawTableHeader() {
     doc.setFontSize(9)
     doc.text('Date', 14, y)
     doc.text('Type', 40, y)
     doc.text('Créneaux / Durée', 70, y)
     doc.text('Activité / Note', 130, y)
     y += 6
+  }
+
+  function ensurePageForNextRow() {
+    if (y + lineHeight <= maxY) return
+    doc.addPage()
+    y = 20
+    drawTableHeader()
+  }
+
+  if (rows.length) {
+    drawTableHeader()
     rows.forEach((r) => {
+      ensurePageForNextRow()
+      if (r.isFerie) {
+        doc.setFillColor(243, 244, 246)
+        doc.rect(12, y - 3.5, 186, 5, 'F')
+      } else if (r.isWeekend) {
+        doc.setFillColor(235, 235, 235)
+        doc.rect(12, y - 3.5, 186, 5, 'F')
+      }
       doc.text(r.date, 14, y)
-      doc.text(r.type, 40, y)
-      doc.text(r.créneaux || r.durée || '', 70, y)
+      doc.text(r.type || '—', 40, y)
+      doc.text(r.créneaux || r.durée || '—', 70, y)
       doc.text([r.activité, r.note].filter(Boolean).join(' — '), 130, y)
       y += 5
     })
     y += 4
+  }
+  if (y + 20 > maxY) {
+    doc.addPage()
+    y = 20
   }
   doc.text(`Total : ${formatDuration(recap.totalMinutes)}`, 14, y)
   y += 5
   if (recap.ferieCount - recap.ferieTravaillesCount > 0) doc.text(`${recap.ferieCount - recap.ferieTravaillesCount} jour(s) férié(s) chômé(s)`, 14, y), (y += 5)
   if (recap.ferieTravaillesCount > 0) doc.text(`${recap.ferieTravaillesCount} jour(s) férié(s) travaillé(s)`, 14, y), (y += 5)
   if (recap.cpCount) doc.text(`${recap.cpCount} CP`, 14, y), (y += 5)
-  if (recap.recupCount) doc.text(`${recap.recupCount} récup`, 14, y), (y += 5)
-  if (recap.dimancheCount) doc.text(`${recap.dimancheCount} dimanche(s) travaillé(s)`, 14, y)
+  if (recap.dimancheCount) doc.text(`${recap.dimancheCount} dimanche(s) travaillé(s)`, 14, y), (y += 5)
+  if (recap.decoucheFranceCount) doc.text(`${recap.decoucheFranceCount} découché(s) France`, 14, y), (y += 5)
+  if (recap.decoucheEtrangerCount) doc.text(`${recap.decoucheEtrangerCount} découché(s) Étranger`, 14, y), (y += 5)
+  if (y + 12 > maxY) {
+    doc.addPage()
+    y = 20
+  }
+  doc.setFontSize(8)
+  doc.text('Légende export : gris clair = jour férié, gris = week-end.', 14, y + 3)
 
   const safeName = `Horaires-${monthLabel}-${year}.pdf`.normalize('NFD').replace(/\p{Diacritic}/gu, '')
   const buf = doc.output('arraybuffer')

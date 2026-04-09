@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useEntries } from '../hooks/useEntries'
-import { slotsToMinutes, formatDuration, DAY_NAMES, MONTH_NAMES, ACTIVITIES, getDefaultSlots, getDefaultSlotForAdd } from '../lib/utils'
+import { slotsToMinutes, formatDuration, DAY_NAMES, MONTH_NAMES, ACTIVITIES, getDefaultSlots, getDefaultSlotForAdd, normalizeActivityLabel } from '../lib/utils'
 import { DAY_TYPES } from '../lib/constants'
 import { getJoursFeries } from '../lib/joursFeries'
 import './Today.css'
@@ -27,20 +27,25 @@ export default function Today() {
 
   const [dayType, setDayType] = useState(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
   const [slots, setSlots] = useState(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
-  const [activity, setActivity] = useState(initialEntry?.activity || 'Dépôt')
+  const [activity, setActivity] = useState(normalizeActivityLabel(initialEntry?.activity) || 'Dépôt')
   const [note, setNote] = useState(initialEntry?.note || '')
+  const [decouche, setDecouche] = useState(!!initialEntry?.decouche)
+  const [decoucheZone, setDecoucheZone] = useState(initialEntry?.decouche_zone === 'etranger' ? 'etranger' : 'france')
   const [saved, setSaved] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
 
   useEffect(() => {
     setDayType(initialEntry?.day_type === 'ferie' ? 'normal' : (initialEntry?.day_type || 'normal'))
     setSlots(initialEntry?.slots?.length ? [...initialEntry.slots] : getDefaultSlots())
-    setActivity(initialEntry?.activity || 'Dépôt')
+    setActivity(normalizeActivityLabel(initialEntry?.activity) || 'Dépôt')
     setNote(initialEntry?.note || '')
+    setDecouche(!!initialEntry?.decouche)
+    setDecoucheZone(initialEntry?.decouche_zone === 'etranger' ? 'etranger' : 'france')
   }, [initialKey])
 
   const totalMinutes = dayType === 'normal' ? slotsToMinutes(slots) : 0
   const showSlots = dayType === 'normal'
+  const showDetails = dayType === 'normal'
 
   function addSlot() {
     setSlots((s) => [...s, getDefaultSlotForAdd()])
@@ -64,8 +69,10 @@ export default function Today() {
     const payload = {
       day_type: savedDayType,
       slots: (savedDayType === 'normal' || savedDayType === 'ferie') ? slots : [],
-      activity: activity || null,
-      note: note || null,
+      activity: (savedDayType === 'normal' || savedDayType === 'ferie') ? (activity || null) : null,
+      note: (savedDayType === 'normal' || savedDayType === 'ferie') ? (note || null) : null,
+      decouche,
+      decouche_zone: decouche ? decoucheZone : null,
       total_minutes: totalMinutes,
     }
     await upsertEntry(dateStr, payload)
@@ -117,10 +124,27 @@ export default function Today() {
             </label>
           </>
         )}
-        <label>
-          Note / lieu
-          <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. VILLENEUVE, AVIGNON" />
-        </label>
+        {showDetails && (
+          <>
+            <label>
+              Note / lieu
+              <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ex. VILLENEUVE, AVIGNON" />
+            </label>
+            <label className="checkbox-label">
+              <input type="checkbox" checked={decouche} onChange={(e) => setDecouche(e.target.checked)} />
+              Découcher
+            </label>
+            {decouche && (
+              <label>
+                Zone du découcher
+                <select value={decoucheZone} onChange={(e) => setDecoucheZone(e.target.value)}>
+                  <option value="france">France</option>
+                  <option value="etranger">Étranger</option>
+                </select>
+              </label>
+            )}
+          </>
+        )}
         {saveMessage && <p className="today-save-message" role="status" aria-live="polite">{saveMessage}</p>}
         <div className="today-actions">
           <button type="submit" className="btn-primary btn-save">
