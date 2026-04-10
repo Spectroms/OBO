@@ -8,11 +8,16 @@ security definer
 set search_path = public
 as $$
 declare
+  uid uuid;
   user_email text;
 begin
-  select email into user_email from auth.users where id = auth.uid() limit 1;
+  uid := auth.uid();
+  if uid is null then
+    return;
+  end if;
+  select email into user_email from auth.users where id = uid limit 1;
   insert into public.profiles (id, email, display_name, role)
-  values (auth.uid(), coalesce(user_email, ''), new_name, 'employee')
+  values (uid, coalesce(user_email, ''), new_name, 'employee')
   on conflict (id) do update set display_name = new_name;
 end;
 $$;
